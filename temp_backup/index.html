@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark light">
+    <title>HubFest - Gestão de Eventos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ícones Feather para um visual limpo e moderno -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar Fixa -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="logo.png" alt="HubFest"
+                    onclick="document.querySelector('.menu-item[data-target=dashboard]').click()"
+                    style="cursor: pointer; max-width: 140px; height: auto;">
+            </div>
+            <nav class="menu">
+                <button class="menu-item active" data-target="dashboard">
+                    <i data-feather="grid"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="menu-item" data-target="parties">
+                    <i data-feather="calendar"></i>
+                    <span>Festas</span>
+                </button>
+                <button class="menu-item" data-target="tasks">
+                    <i data-feather="check-square"></i>
+                    <span>Tarefas</span>
+                </button>
+                <button class="menu-item" data-target="calendar">
+                    <i data-feather="clock"></i>
+                    <span>Calendário</span>
+                </button>
+                <button class="menu-item" data-target="settings">
+                    <i data-feather="settings"></i>
+                    <span>Configurações</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Área de Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Seção: Dashboard (REDESENHADA) -->
+            <section id="dashboard" class="content-section active">
+                <header class="section-header">
+                    <h1>Dashboard</h1>
+                    <p>Bem-vindo ao HubFest</p>
+                </header>
+
+                <!-- 📊 CARDS DE INDICADORES -->
+                <div class="dashboard-grid">
+                    <div class="card indicator-card">
+                        <span class="indicator-number" id="dash-pendentes">0</span>
+                        <span class="indicator-label">Festas Pendentes</span>
+                    </div>
+                    <div class="card indicator-card">
+                        <span class="indicator-number" id="dash-ativas">1</span>
+                        <span class="indicator-label">Tarefas Ativas</span>
+                    </div>
+                    <div class="card indicator-card">
+                        <span class="indicator-number" id="dash-confirmadas">0</span>
+                        <span class="indicator-label">Festas Confirmadas</span>
+                    </div>
+                </div>
+
+                <!-- 🚀 INÍCIO RÁPIDO & 📅 PRÓXIMAS FESTAS (GRID DUAL) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+
+                    <!-- Coluna 1: Início Rápido -->
+                    <div>
+                        <h3 class="section-title">🚀 Início Rápido</h3>
+                        <div class="quick-actions-grid">
+                            <button class="quick-btn primary" onclick="navTo('parties')">
+                                <i data-feather="plus-circle"></i>
+                                Criar Nova Festa
+                            </button>
+                            <button class="quick-btn" onclick="navTo('calendar')">
+                                <i data-feather="calendar"></i>
+                                Ver Calendário
+                            </button>
+                            <button class="quick-btn" onclick="navTo('tasks')">
+                                <i data-feather="check-square"></i>
+                                Ver Tarefas
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Próximas Festas -->
+                    <div>
+                        <h3 class="section-title">📅 Próximas Festas</h3>
+                        <div id="dashboard-preview-list">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção: Festas -->
+            <section id="parties" class="content-section">
+                <header class="section-header">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <div>
+                            <h1>Festas</h1>
+                            <p>Gerencie todas as festas</p>
+                        </div>
+                        <button class="quick-btn primary" onclick="openPartyModal()">
+                            <i data-feather="plus"></i>
+                            Nova Festa
+                        </button>
+                    </div>
+
+                    <div class="filter-toolbar">
+                        <div class="search-box">
+                            <i data-feather="search"></i>
+                            <input type="text" id="party-search" placeholder="Buscar por nome, responsável...">
+                        </div>
+                        <div class="filter-group">
+                            <button class="filter-chip active" data-filter="all">Todas</button>
+                            <button class="filter-chip" data-filter="confirmada">Confirmadas</button>
+                            <button class="filter-chip" data-filter="pendente">Pendentes</button>
+                            <button class="filter-chip" data-filter="finalizada">Finalizadas</button>
+                        </div>
+                    </div>
+                </header>
+                <div class="card-list" id="lista-festas">
+                    <!-- Preenchido via JS -->
+                </div>
+            </section>
+
+            <!-- Seção: Tarefas -->
+            <section id="tasks" class="content-section">
+                <header class="section-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h1>Tarefas</h1>
+                            <p>Checklist de organização</p>
+                        </div>
+                        <button class="quick-btn primary" onclick="openTaskModal()">
+                            <i data-feather="plus"></i>
+                            Nova Tarefa
+                        </button>
+                    </div>
+                </header>
+                <div class="card-list" id="lista-tarefas">
+                    <!-- Preenchido via JS -->
+                </div>
+            </section>
+
+            <!-- Seção: Calendário -->
+            <section id="calendar" class="content-section">
+                <header class="section-header">
+                    <h1>Calendário</h1>
+                    <p>Visualize suas festas agendadas</p>
+                </header>
+
+                <div class="calendar-container">
+                    <!-- Esquerda: Calendário Mensal -->
+                    <div class="card calendar-column-left">
+                        <div class="calendar-header">
+                            <button class="cal-nav-btn" id="prev-month">
+                                <i data-feather="chevron-left"></i>
+                            </button>
+                            <h2 id="calendar-title">Janeiro 2026</h2>
+                            <button class="cal-nav-btn" id="next-month">
+                                <i data-feather="chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <div class="calendar-weekdays">
+                            <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                        </div>
+
+                        <div class="calendar-grid" id="calendar-grid">
+                            <!-- Dias gerados via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Direita: Detalhes do Dia -->
+                    <div class="card calendar-column-right">
+                        <div id="day-details-content">
+                            <!-- Preenchido via JS -->
+                            <div class="empty-day-state">
+                                <h2 id="selected-date-title">Selecione uma data</h2>
+                                <p>Nenhuma festa selecionada.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seção: Configurações -->
+            <section id="settings" class="content-section">
+                <header class="section-header">
+                    <h1>Configurações</h1>
+                    <p>Personalize seu HubFest</p>
+                </header>
+                <div class="card settings-card">
+                    <h3>Visual & Tema</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Escolha como você quer ver o HubFest.
+                    </p>
+                    <div class="settings-actions">
+                        <button class="btn-action" onclick="setTheme('dark')" id="btn-theme-dark">
+                            <i data-feather="moon"></i>
+                            Modo Escuro
+                        </button>
+                        <button class="btn-action" onclick="setTheme('light')" id="btn-theme-light">
+                            <i data-feather="sun"></i>
+                            Modo Claro
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card settings-card" style="margin-top: 1.5rem;">
+                    <h3>Personalização do WhatsApp</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        Edite o modelo da mensagem. Use as variáveis abaixo para substituir pelos dados da festa:
+                        <br>
+                        <code
+                            style="color:var(--primary); background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">[nome]</code>
+                        <code
+                            style="color:var(--primary); background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">[responsavel]</code>
+                        <code
+                            style="color:var(--primary); background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">[local]</code>
+                        <code
+                            style="color:var(--primary); background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">[data]</code>
+                        <code
+                            style="color:var(--primary); background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:4px;">[hora]</code>
+                    </p>
+                    <div class="form-group">
+                        <label>Modelo da Mensagem</label>
+                        <textarea id="config-template" rows="12" style="font-family: monospace; line-height: 1.5;"
+                            oninput="savePreferences()"></textarea>
+                    </div>
+                    <div class="settings-actions">
+                        <button class="btn-action" onclick="resetTemplate()">
+                            <i data-feather="refresh-cw"></i>
+                            Restaurar Modelo Padrão
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card settings-card" style="margin-top: 1.5rem;">
+                    <h3>Backup & Segurança</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Salve seus dados ou restaure de um
+                        arquivo.</p>
+                    <div class="settings-actions">
+                        <button class="btn-action primary" onclick="exportAppData()">
+                            <i data-feather="download"></i>
+                            Exportar Backup
+                        </button>
+                        <button class="btn-action" onclick="triggerImport()">
+                            <i data-feather="upload"></i>
+                            Restaurar Backup
+                        </button>
+                        <!-- Hidden Input for File Upload -->
+                        <input type="file" id="import-file" style="display: none;" accept=".json"
+                            onchange="importAppData(this)">
+                    </div>
+                </div>
+
+                <div class="card settings-card" style="margin-top: 1.5rem;">
+                    <h3>Gerenciamento de Dados</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Controle os dados salvos localmente no
+                        seu navegador.</p>
+                    <div class="settings-actions">
+                        <button class="btn-action" onclick="reloadDemoData()">
+                            <i data-feather="refresh-cw"></i>
+                            Recarregar Dados de Exemplo
+                        </button>
+                        <button class="btn-action danger" onclick="resetAppData()">
+                            <i data-feather="trash-2"></i>
+                            Limpar Tudo (Reset)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card settings-card" style="margin-top: 1.5rem;">
+                    <h3>Sobre</h3>
+                    <p><strong>HubFest</strong> v1.0.0</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+                        Sistema de gestão de festas infantis.<br>
+                        Desenvolvido com tecnologia web moderna.
+                    </p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL OVERLAY -->
+    <div id="modal-overlay" class="modal-overlay">
+        <!-- MODAL FESTA -->
+        <div id="modal-festa" class="modal-card">
+            <h2 id="modal-festa-title">Nova Festa</h2>
+            <form id="form-festa">
+                <input type="hidden" id="festa-id">
+
+                <div class="form-group">
+                    <label>Nome da Criança/Festa</label>
+                    <input type="text" id="festa-nome" required placeholder="Ex: Julia">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Responsável</label>
+                        <input type="text" id="festa-responsavel" placeholder="Ex: Thais">
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="tel" id="festa-telefone" placeholder="(21) 99999-9999">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="festa-data" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora</label>
+                        <input type="time" id="festa-hora" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="festa-status">
+                            <option value="neutral">Pendente</option>
+                            <option value="warning">Planejamento</option>
+                            <option value="success">Confirmada</option>
+                            <option value="dark">Finalizada</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Idade (anos)</label>
+                        <input type="number" id="festa-idade" placeholder="Ex: 3">
+                    </div>
+                    <div class="form-group">
+                        <label>Qtd. Crianças</label>
+                        <input type="number" id="festa-criancas" placeholder="Ex: 20">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Local da Festa</label>
+                    <input type="text" id="festa-local" placeholder="Ex: Av. Paulista, 1000 - Salão de Festas">
+                </div>
+
+                <div class="form-group">
+                    <label>Observação</label>
+                    <textarea id="festa-obs" rows="3" placeholder="Detalhes importantes..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Salvar Festa</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- MODAL TAREFA -->
+        <div id="modal-tarefa" class="modal-card">
+            <h2 id="modal-tarefa-title">Nova Tarefa</h2>
+            <form id="form-tarefa">
+                <input type="hidden" id="tarefa-id">
+
+                <div class="form-group">
+                    <label>Título da Tarefa</label>
+                    <input type="text" id="tarefa-titulo" required placeholder="Ex: Comprar descartáveis">
+                </div>
+
+                <!-- Opcional: Vincular a uma festa (Futuro) -->
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Salvar Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        // Inicializa os ícones do Feather
+        feather.replace();
+    </script>
+</body>
+
+</html>
