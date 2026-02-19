@@ -1191,6 +1191,11 @@ body.light-mode .calendar-day.is-holiday {
     }
 }
 
+/* Esconde barra mobile por padrão no desktop */
+.mobile-top-bar {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .app-container {
         flex-direction: column;
@@ -1380,10 +1385,6 @@ body.light-mode .calendar-day.is-holiday {
     .party-row {
         padding: 0.75rem !important;
     }
-}
-
-.mobile-top-bar {
-    display: none;
 }
 
 /* --- DASHBOARD PREMIUM REDESIGN --- */

@@ -18,14 +18,15 @@ const FERIADOS_2026 = {
 
 document.addEventListener('DOMContentLoaded', () => {
     // PWA Service Worker Registration
-    // PWA Service Worker Registration - DESATIVADO TEMPORARIAMENTE PARA RESOLVER PROBLEMAS DE CACHE
-    /*
+    // DESATIVAR E REMOVER SERVICE WORKER PARA LIMPAR CACHE ANTIGO
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('Service Worker Registrado!'))
-            .catch(err => console.log('SW Falhou:', err));
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+            for (let registration of registrations) {
+                registration.unregister();
+                console.log('SW Antigo Removido!');
+            }
+        });
     }
-    */
 
     feather.replace();
     setupNavigation();
