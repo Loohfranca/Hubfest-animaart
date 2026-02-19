@@ -18,11 +18,14 @@ const FERIADOS_2026 = {
 
 document.addEventListener('DOMContentLoaded', () => {
     // PWA Service Worker Registration
+    // PWA Service Worker Registration - DESATIVADO TEMPORARIAMENTE PARA RESOLVER PROBLEMAS DE CACHE
+    /*
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(() => console.log('Service Worker Registrado!'))
             .catch(err => console.log('SW Falhou:', err));
     }
+    */
 
     feather.replace();
     setupNavigation();
@@ -229,8 +232,19 @@ function showSection(targetId) {
     const targetSection = document.getElementById(targetId);
     if (targetSection) targetSection.classList.add('active');
 
-    const activeBtn = document.querySelector(`.menu-item[data-target="${targetId}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
+    const activeBtn = document.querySelectorAll(`.menu-item[data-target="${targetId}"]`);
+    activeBtn.forEach(btn => btn.classList.add('active'));
+
+    // Fechar menu mobile ao clicar (se estiver aberto)
+    const sidebar = document.querySelector('.sidebar');
+    if (window.innerWidth <= 768) {
+        sidebar.classList.remove('mobile-active');
+    }
+}
+
+window.toggleMobileMenu = function () {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('mobile-active');
 }
 
 function renderData() {

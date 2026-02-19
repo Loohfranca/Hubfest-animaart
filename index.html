@@ -32,10 +32,16 @@
 <body>
     <div class="app-container">
         <!-- Sidebar Fixa -->
-        <aside class="sidebar">
-            <div class="logo">
-                <span class="logo-text" onclick="navTo('dashboard')">HubFest</span>
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-header-mobile">
+                <div class="logo">
+                    <span class="logo-text" onclick="navTo('dashboard')">HubFest</span>
+                </div>
+                <button class="mobile-close-btn" onclick="toggleMobileMenu()">
+                    <i data-feather="x"></i>
+                </button>
             </div>
+
             <nav class="menu">
                 <button class="menu-item active" data-target="dashboard">
                     <i data-feather="grid"></i>
@@ -63,29 +69,37 @@
                 </button>
             </nav>
 
-            <div class="sidebar-footer"
-                style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                <div class="user-profile"
-                    style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.5rem;">
-                    <div class="user-avatar"
-                        style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.8rem;"
-                        id="user-initials">
-                        U
-                    </div>
-                    <div class="user-info" style="overflow: hidden;">
-                        <p class="user-name"
-                            style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; text-overflow: ellipsis;"
-                            id="user-display-name">Usuário</p>
-                        <p class="user-status" style="font-size: 0.7rem; color: var(--text-muted);">Online</p>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar" id="user-initials">U</div>
+                    <div class="user-info">
+                        <p class="user-name" id="user-display-name">Usuário</p>
+                        <p class="user-status">Online</p>
                     </div>
                 </div>
-                <button class="menu-item logout-btn" onclick="logoutUser()"
-                    style="color: #f87171; border-radius: 10px; width: 100%;">
+                <button class="menu-item logout-btn" onclick="logoutUser()">
                     <i data-feather="log-out"></i>
                     <span>Sair</span>
                 </button>
             </div>
         </aside>
+
+        <!-- Barra Topo Mobile (Hamburger) -->
+        <header class="mobile-top-bar">
+            <div class="logo">
+                <span class="logo-text">HubFest</span>
+            </div>
+            <div class="mobile-top-right">
+                <div class="user-profile-mini">
+                    <span id="user-display-name-mini"
+                        style="font-size: 0.8rem; font-weight: 600; color: var(--accent);"></span>
+                    <div class="user-avatar-mini" id="user-initials-mini">U</div>
+                </div>
+                <button class="hamburger-btn" onclick="toggleMobileMenu()">
+                    <i data-feather="menu"></i>
+                </button>
+            </div>
+        </header>
 
         <!-- Área de Conteúdo Principal -->
         <main class="main-content">
@@ -519,8 +533,17 @@
             const userStr = localStorage.getItem('hubfest_active_user');
             if (userStr) {
                 const user = JSON.parse(userStr);
+                const initials = user.name.charAt(0).toUpperCase();
+
+                // Sidebar / Principal
                 document.getElementById('user-display-name').innerText = user.name;
-                document.getElementById('user-initials').innerText = user.name.charAt(0).toUpperCase();
+                document.getElementById('user-initials').innerText = initials;
+
+                // Mini Profile (Mobile Header)
+                const miniName = document.getElementById('user-display-name-mini');
+                const miniInitials = document.getElementById('user-initials-mini');
+                if (miniName) miniName.innerText = user.name.split(' ')[0]; // Só primeiro nome no mini
+                if (miniInitials) miniInitials.innerText = initials;
 
                 // Personalizar saudação principal
                 const greetingEl = document.getElementById('main-greeting');
