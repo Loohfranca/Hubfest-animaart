@@ -1,152 +1,146 @@
 /**
- * HubFest - Gerenciamento de Dados (LocalStorage)
+ * HubFest - Gerenciamento de Dados (Supabase)
  */
 
 const Store = {
-    // Chaves para o LocalStorage dinâmicas por usuário
-    get KEYS() {
-        const userStr = localStorage.getItem('hubfest_active_user');
-        const userId = userStr ? JSON.parse(userStr).id : 'guest';
-        return {
-            FESTAS: `hubfest_${userId}_festas`,
-            TAREFAS: `hubfest_${userId}_tarefas`,
-            INVESTIMENTOS: `hubfest_${userId}_investimentos`
-        };
-    },
-
     // --- FESTAS ---
+    getFestas: async function () {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
 
-    getFestas: function () {
-        const data = localStorage.getItem(this.KEYS.FESTAS);
-        return data ? JSON.parse(data) : [];
+        const { data, error } = await supabase
+            .from('festas')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('data', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao buscar festas:', error);
+            return [];
+        }
+        return data;
     },
 
-    addFesta: function (festa) {
-        const festas = this.getFestas();
-        if (!festa.id) {
-            festa.id = Date.now().toString();
+    addFesta: async function (festa) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('festas')
+            .insert([{ ...festa, user_id: user.id }])
+            .select();
+
+        if (error) {
+            alert('Erro ao adicionar festa: ' + error.message);
+            return null;
         }
-        festas.push(festa);
-        localStorage.setItem(this.KEYS.FESTAS, JSON.stringify(festas));
 
         document.dispatchEvent(new Event('festasUpdated'));
-        return festa;
+        return data[0];
     },
 
-    updateFesta: function (updatedFesta) {
-        const festas = this.getFestas();
-        const index = festas.findIndex(f => f.id === updatedFesta.id);
-        if (index !== -1) {
-            festas[index] = updatedFesta;
-            localStorage.setItem(this.KEYS.FESTAS, JSON.stringify(festas));
-            document.dispatchEvent(new Event('festasUpdated'));
-            return true;
+    updateFesta: async function (updatedFesta) {
+        const { data, error } = await supabase
+            .from('festas')
+            .update(updatedFesta)
+            .eq('id', updatedFesta.id);
+
+        if (error) {
+            alert('Erro ao atualizar festa: ' + error.message);
+            return false;
         }
-        return false;
+
+        document.dispatchEvent(new Event('festasUpdated'));
+        return true;
     },
 
-    deleteFesta: function (id) {
-        let festas = this.getFestas();
-        festas = festas.filter(f => f.id !== id);
-        localStorage.setItem(this.KEYS.FESTAS, JSON.stringify(festas));
+    deleteFesta: async function (id) {
+        const { error } = await supabase
+            .from('festas')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert('Erro ao excluir festa: ' + error.message);
+            return;
+        }
         document.dispatchEvent(new Event('festasUpdated'));
     },
 
     // --- TAREFAS ---
+    getTarefas: async function () {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
 
-    getTarefas: function () {
-        const data = localStorage.getItem(this.KEYS.TAREFAS);
-        return data ? JSON.parse(data) : [];
+        const { data, error } = await supabase
+            .from('tarefas')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Erro ao buscar tarefas:', error);
+            return [];
+        }
+        return data;
     },
 
-    addTarefa: function (tarefa) {
-        const tarefas = this.getTarefas();
-        if (!tarefa.id) {
-            tarefa.id = Date.now().toString();
+    addTarefa: async function (tarefa) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('tarefas')
+            .insert([{ ...tarefa, user_id: user.id, feita: tarefa.feita || false }])
+            .select();
+
+        if (error) {
+            alert('Erro ao adicionar tarefa: ' + error.message);
+            return null;
         }
-        if (typeof tarefa.feita === 'undefined') {
-            tarefa.feita = false;
-        }
-        tarefas.push(tarefa);
-        localStorage.setItem(this.KEYS.TAREFAS, JSON.stringify(tarefas));
 
         document.dispatchEvent(new Event('tarefasUpdated'));
-        return tarefa;
+        return data[0];
     },
 
-    updateTarefa: function (updatedTarefa) {
-        const tarefas = this.getTarefas();
-        const index = tarefas.findIndex(t => t.id === updatedTarefa.id);
-        if (index !== -1) {
-            tarefas[index] = updatedTarefa;
-            localStorage.setItem(this.KEYS.TAREFAS, JSON.stringify(tarefas));
-            document.dispatchEvent(new Event('tarefasUpdated'));
-            return true;
+    updateTarefa: async function (updatedTarefa) {
+        const { error } = await supabase
+            .from('tarefas')
+            .update(updatedTarefa)
+            .eq('id', updatedTarefa.id);
+
+        if (error) {
+            alert('Erro ao atualizar tarefa: ' + error.message);
+            return false;
         }
-        return false;
+
+        document.dispatchEvent(new Event('tarefasUpdated'));
+        return true;
     },
 
-    deleteTarefa: function (id) {
-        let tarefas = this.getTarefas();
-        tarefas = tarefas.filter(t => t.id !== id);
-        localStorage.setItem(this.KEYS.TAREFAS, JSON.stringify(tarefas));
+    deleteTarefa: async function (id) {
+        const { error } = await supabase
+            .from('tarefas')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert('Erro ao excluir tarefa: ' + error.message);
+            return;
+        }
         document.dispatchEvent(new Event('tarefasUpdated'));
     },
 
-    toggleTarefa: function (id) {
-        const tarefas = this.getTarefas();
-        const index = tarefas.findIndex(t => t.id === id);
+    toggleTarefa: async function (id, currentStatus) {
+        const { error } = await supabase
+            .from('tarefas')
+            .update({ feita: !currentStatus })
+            .eq('id', id);
 
-        if (index !== -1) {
-            tarefas[index].feita = !tarefas[index].feita;
-            localStorage.setItem(this.KEYS.TAREFAS, JSON.stringify(tarefas));
-            document.dispatchEvent(new Event('tarefasUpdated'));
-            return true;
+        if (error) {
+            alert('Erro ao alterar tarefa: ' + error.message);
+            return false;
         }
-        return false;
-    },
-
-    clearAll: function () {
-        localStorage.removeItem(this.KEYS.FESTAS);
-        localStorage.removeItem(this.KEYS.TAREFAS);
-        console.log('Dados do HubFest limpos.');
+        document.dispatchEvent(new Event('tarefasUpdated'));
+        return true;
     }
 };
-
-// Inicializa com dados de exemplo se estiver vazio
-(function initMockData() {
-    if (Store.getFestas().length === 0) {
-        console.log('Inicializando dados de exemplo...');
-        // Mock solicitado: Julia
-        Store.addFesta({
-            id: '1',
-            nome: 'Julia',
-            responsavel: 'Thais',
-            data: '2026-03-14',
-            hora: '14:00', // hora opcional, deixando padrão
-            telefone: '21969754979',
-            idade: '3 anos',
-            criancas: '20',
-            status: 'success',
-            statusLabel: 'Confirmada'
-        });
-        // Outro exemplo
-        Store.addFesta({
-            id: '2',
-            nome: 'Miguel',
-            responsavel: 'Carlos',
-            data: '2026-11-15',
-            hora: '14:00',
-            telefone: '21999998888',
-            idade: '5 anos',
-            criancas: '15',
-            status: 'warning',
-            statusLabel: 'Planejamento'
-        });
-    }
-
-    if (Store.getTarefas().length === 0) {
-        Store.addTarefa({ id: '101', titulo: 'Contratar Animação', festaId: '1', feita: true });
-        Store.addTarefa({ id: '102', titulo: 'Verificar Decoração', festaId: '1', feita: false });
-    }
-})();

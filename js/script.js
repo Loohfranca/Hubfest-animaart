@@ -17,7 +17,6 @@ const FERIADOS_2026 = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // PWA Service Worker Registration
     // DESATIVAR E REMOVER SERVICE WORKER PARA LIMPAR CACHE ANTIGO
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -32,9 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
     renderData();
     setupFilters();
-    loadPreferences(); // Load saved WhatsApp settings
-    checkAndUpdatePastFestas(); // Auto-finalize past parties
-    initCalendar(); // New init
+    loadPreferences();
+    checkAndUpdatePastFestas();
+    initCalendar();
 
     document.getElementById('modal-overlay').addEventListener('click', (e) => {
         if (e.target.id === 'modal-overlay') {
@@ -43,9 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('festasUpdated', () => {
-        checkAndUpdatePastFestas(); // Re-check whenever data changes
+        checkAndUpdatePastFestas();
         renderFestas();
-        renderCalendar(); // Re-render to show new event dots
+        renderCalendar();
         updateDashboardCounts();
         renderDashboardPreview();
     });
@@ -61,18 +60,17 @@ window.navTo = function (targetId) {
 
 // --- MODAL & CRUD LOGIC ---
 
-// --- FESTAS ---
-window.openPartyModal = function (id = null) {
+window.openPartyModal = async function (id = null) {
     const modal = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-festa');
     const title = document.getElementById('modal-festa-title');
     const form = document.getElementById('form-festa');
 
-    form.reset(); // Clear previous data
+    form.reset();
 
     if (id) {
-        // Edit Mode
-        const festa = Store.getFestas().find(f => f.id === id);
+        const festas = await Store.getFestas();
+        const festa = festas.find(f => f.id === id);
         if (!festa) return;
 
         title.innerText = 'Editar Festa';
@@ -88,13 +86,10 @@ window.openPartyModal = function (id = null) {
         document.getElementById('festa-local').value = festa.local || '';
         document.getElementById('festa-obs').value = festa.obs || '';
     } else {
-        // Create Mode
         title.innerText = 'Nova Festa';
         document.getElementById('festa-id').value = '';
-        document.getElementById('form-festa').reset(); // Ensure all new fields are clear
     }
 
-    // Toggle Visibility
     modal.classList.add('active');
     document.getElementById('modal-tarefa').style.display = 'none';
     modalContent.style.display = 'flex';
@@ -104,24 +99,21 @@ window.editarFesta = function (id) {
     openPartyModal(id);
 }
 
-window.excluirFesta = function (id) {
+window.excluirFesta = async function (id) {
     if (confirm('Tem certeza que deseja excluir esta festa?')) {
-        Store.deleteFesta(id);
+        await Store.deleteFesta(id);
     }
 }
 
-document.getElementById('form-festa').addEventListener('submit', (e) => {
+document.getElementById('form-festa').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('festa-id').value;
-
-    // Status Logic for Label
     const statusVal = document.getElementById('festa-status').value;
     let statusLabel = 'Pendente';
     if (statusVal === 'warning') statusLabel = 'Planejamento';
     if (statusVal === 'success') statusLabel = 'Confirmada';
 
     const festaData = {
-        id: id || undefined, // undefined lets Store generate ID
         nome: document.getElementById('festa-nome').value,
         responsavel: document.getElementById('festa-responsavel').value,
         data: document.getElementById('festa-data').value,
@@ -136,17 +128,16 @@ document.getElementById('form-festa').addEventListener('submit', (e) => {
     };
 
     if (id) {
-        Store.updateFesta(festaData);
+        festaData.id = id;
+        await Store.updateFesta(festaData);
     } else {
-        Store.addFesta(festaData);
+        await Store.addFesta(festaData);
     }
 
     closeModals();
 });
 
-
-// --- TAREFAS ---
-window.openTaskModal = function (id = null) {
+window.openTaskModal = async function (id = null) {
     const modal = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-tarefa');
     const title = document.getElementById('modal-tarefa-title');
@@ -155,7 +146,8 @@ window.openTaskModal = function (id = null) {
     form.reset();
 
     if (id) {
-        const tarefa = Store.getTarefas().find(t => t.id === id);
+        const tarefas = await Store.getTarefas();
+        const tarefa = tarefas.find(t => t.id === id);
         if (!tarefa) return;
         title.innerText = 'Editar Tarefa';
         document.getElementById('tarefa-id').value = tarefa.id;
@@ -174,42 +166,36 @@ window.editarTarefa = function (id) {
     openTaskModal(id);
 }
 
-window.excluirTarefa = function (id) {
+window.excluirTarefa = async function (id) {
     if (confirm('Excluir esta tarefa?')) {
-        Store.deleteTarefa(id);
+        await Store.deleteTarefa(id);
     }
 }
 
-document.getElementById('form-tarefa').addEventListener('submit', (e) => {
+document.getElementById('form-tarefa').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('tarefa-id').value;
     const tarefaData = {
-        id: id || undefined,
         titulo: document.getElementById('tarefa-titulo').value,
-        // Preserves 'feita' status if updating, or defaults to false in Store if new
     };
 
     if (id) {
-        const existing = Store.getTarefas().find(t => t.id === id);
-        if (existing) tarefaData.feita = existing.feita; // Keep checked status
-        Store.updateTarefa(tarefaData);
+        tarefaData.id = id;
+        await Store.updateTarefa(tarefaData);
     } else {
-        Store.addTarefa(tarefaData);
+        await Store.addTarefa(tarefaData);
     }
     closeModals();
 });
 
-
 window.closeModals = function () {
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
-    // slight delay to clear content display for animation reset
     setTimeout(() => {
         document.getElementById('modal-festa').style.display = 'none';
         document.getElementById('modal-tarefa').style.display = 'none';
     }, 200);
 }
-
 
 // --- DOM HELPERS ---
 
@@ -236,7 +222,6 @@ function showSection(targetId) {
     const activeBtn = document.querySelectorAll(`.menu-item[data-target="${targetId}"]`);
     activeBtn.forEach(btn => btn.classList.add('active'));
 
-    // Fechar menu mobile ao clicar (se estiver aberto)
     const sidebar = document.querySelector('.sidebar');
     if (window.innerWidth <= 768) {
         sidebar.classList.remove('mobile-active');
@@ -248,24 +233,23 @@ window.toggleMobileMenu = function () {
     sidebar.classList.toggle('mobile-active');
 }
 
-function renderData() {
-    renderFestas();
-    renderTarefas();
+async function renderData() {
+    await renderFestas();
+    await renderTarefas();
     updateDashboardCounts();
     renderDashboardPreview();
 }
 
-function renderDashboardPreview() {
+async function renderDashboardPreview() {
     const container = document.getElementById('dashboard-preview-list');
     if (!container) return;
 
-    let festas = Store.getFestas();
+    let festas = await Store.getFestas();
     if (festas.length === 0) {
         container.innerHTML = '<div class="card" style="opacity:0.7"><p>Nenhuma festa agendada.</p></div>';
         return;
     }
 
-    // Sort by Date & Time
     festas.sort((a, b) => {
         const dateA = new Date(a.data + 'T' + (a.hora || '00:00') + ':00');
         const dateB = new Date(b.data + 'T' + (b.hora || '00:00') + ':00');
@@ -274,7 +258,6 @@ function renderDashboardPreview() {
 
     const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    // Group by Month
     const grouped = {};
     festas.forEach(f => {
         const dateObj = new Date(f.data + 'T12:00:00');
@@ -316,13 +299,10 @@ function renderDashboardPreview() {
     feather.replace();
 }
 
-/**
- * --- CALENDAR LOGIC ---
- */
-let currentCalDate = new Date(2026, 0, 19); // Start at Jan 2026 as per prompt, or use new Date()
-let selectedDate = new Date(2026, 0, 19);
+let currentCalDate = new Date();
+let selectedDate = new Date();
 
-function initCalendar() {
+async function initCalendar() {
     document.getElementById('prev-month').addEventListener('click', () => {
         currentCalDate.setMonth(currentCalDate.getMonth() - 1);
         renderCalendar();
@@ -332,58 +312,48 @@ function initCalendar() {
         renderCalendar();
     });
 
-    renderCalendar();
-    renderDayDetails(selectedDate);
+    await renderCalendar();
+    await renderDayDetails(selectedDate);
 }
 
-function renderCalendar() {
+async function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const title = document.getElementById('calendar-title');
-    const festas = Store.getFestas();
+    const festas = await Store.getFestas();
 
-    // Set Title (Ex: Janeiro 2026)
     const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     title.innerText = `${monthNames[currentCalDate.getMonth()]} ${currentCalDate.getFullYear()}`;
 
     grid.innerHTML = '';
 
-    // Logic for days
     const firstDayOfMonth = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth(), 1);
     const lastDayOfMonth = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
-
-    // Padding days (previous month)
-    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
+    const startingDayOfWeek = firstDayOfMonth.getDay();
 
     for (let i = 0; i < startingDayOfWeek; i++) {
         const day = document.createElement('div');
         day.classList.add('calendar-day', 'prev-month');
-        // Optional: show number of prev month day? Keeping empty for simplicity or calculate needed.
         grid.appendChild(day);
     }
 
-    // Days of current month
     for (let i = 1; i <= daysInMonth; i++) {
         const day = document.createElement('div');
         day.classList.add('calendar-day');
         day.innerText = i;
 
-        // Construct date string YYYY-MM-DD for comparison
         const monthStr = (currentCalDate.getMonth() + 1).toString().padStart(2, '0');
         const dayStr = i.toString().padStart(2, '0');
         const dateString = `${currentCalDate.getFullYear()}-${monthStr}-${dayStr}`;
 
-        // Check for events
         const hasEvent = festas.some(f => f.data === dateString);
         if (hasEvent) day.classList.add('has-event');
 
-        // Check for holidays
         if (FERIADOS_2026[dateString]) {
             day.classList.add('is-holiday');
             day.title = FERIADOS_2026[dateString];
         }
 
-        // Check selected
         if (selectedDate &&
             selectedDate.getDate() === i &&
             selectedDate.getMonth() === currentCalDate.getMonth() &&
@@ -391,10 +361,9 @@ function renderCalendar() {
             day.classList.add('selected');
         }
 
-        // Click Handler
         day.addEventListener('click', () => {
             selectedDate = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth(), i);
-            renderCalendar(); // Re-render to update selected class
+            renderCalendar();
             renderDayDetails(selectedDate);
         });
 
@@ -402,18 +371,17 @@ function renderCalendar() {
     }
 }
 
-function renderDayDetails(date) {
+async function renderDayDetails(date) {
     const container = document.getElementById('day-details-content');
     if (!container) return;
 
-    const festas = Store.getFestas();
+    const festas = await Store.getFestas();
     const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
     const dayStr = date.getDate().toString().padStart(2, '0');
     const dateString = `${date.getFullYear()}-${monthStr}-${dayStr}`;
 
     container.innerHTML = `<h2 id="selected-date-title" style="font-size: 1.35rem; font-weight: 700; color: #fff; margin-bottom: 1.5rem; text-align: center;">${formatDate(dateString)}</h2>`;
 
-    // Check for Holiday
     if (FERIADOS_2026[dateString]) {
         container.innerHTML += `
             <div class="holiday-banner" style="background: rgba(248, 113, 113, 0.15); border: 1px solid rgba(248, 113, 113, 0.3); color: #f87171; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; font-weight: 600; font-size: 0.9rem;">
@@ -451,11 +419,6 @@ function renderDayDetails(date) {
     feather.replace();
 }
 
-/**
- * --- EXISTING FUNCTIONS ---
- */
-
-// --- FILTERS & SEARCH STATE ---
 let currentSearch = '';
 let currentFilter = 'all';
 
@@ -472,42 +435,32 @@ function setupFilters() {
 
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Remove active from all
             filterBtns.forEach(b => b.classList.remove('active'));
-            // Add active to clicked
             btn.classList.add('active');
-
             currentFilter = btn.getAttribute('data-filter');
             renderFestas();
         });
     });
 }
 
-// --- HELPERS ---
 function maskPhone(phone) {
     if (!phone) return '-';
-    // Remove all non-digits
     const clean = phone.replace(/\D/g, '');
     if (clean.length < 2) return phone;
-    // Keep first 2 digits, mask the rest
     return clean.substring(0, 2) + '*'.repeat(clean.length - 2);
 }
 
-function renderFestas() {
-    let festas = Store.getFestas();
+async function renderFestas() {
+    let festas = await Store.getFestas();
     const container = document.getElementById('lista-festas');
     if (!container) return;
 
-    // --- SORTING LOGIC ---
-    // Sort chronologically by date and time
     festas.sort((a, b) => {
         const dateA = new Date(a.data + 'T' + (a.hora || '00:00'));
         const dateB = new Date(b.data + 'T' + (b.hora || '00:00'));
         return dateA - dateB;
     });
 
-    // --- FILTER & SEARCH LOGIC ---
-    // 1. Filter by Status
     if (currentFilter !== 'all') {
         if (currentFilter === 'confirmada') {
             festas = festas.filter(f => f.status === 'success');
@@ -518,14 +471,12 @@ function renderFestas() {
         }
     }
 
-    // 2. Filter by Search (Name or Responsible)
     if (currentSearch) {
         festas = festas.filter(f =>
             f.nome.toLowerCase().includes(currentSearch) ||
             (f.responsavel && f.responsavel.toLowerCase().includes(currentSearch))
         );
     }
-    // ----------------------------
 
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
@@ -548,7 +499,7 @@ function renderFestas() {
                 </div>
                 <div class="row-details">
                     <h3 class="row-title">${f.nome}</h3>
-                    <p class="row-subtitle">${f.responsavel || 'Sem responsável'} • ${f.idade ? f.idade + ' anos' : 'Idade -'}</p>
+                    <p class="row-subtitle">${f.responsavel || 'Sem responsável'} • ${f.idade || 'Idade -'}</p>
                 </div>
             </div>
 
@@ -617,14 +568,14 @@ Passando para confirmar os detalhes da festa da [nome] que será daqui a 2 dias!
 
 Está tudo certo para esse horário? Qualquer dúvida, estamos à disposição! 😊🎈`;
 
-window.sendWhatsapp = function (id) {
-    const festa = Store.getFestas().find(f => f.id === id);
+window.sendWhatsapp = async function (id) {
+    const festas = await Store.getFestas();
+    const festa = festas.find(f => f.id === id);
     if (!festa) return;
 
     let template = localStorage.getItem('hubfest_template');
     if (!template) template = DEFAULT_TEMPLATE;
 
-    // Replace Placeholders
     const texto = template
         .replace(/\[nome\]/g, festa.nome)
         .replace(/\[responsavel\]/g, festa.responsavel || 'Cliente')
@@ -636,8 +587,9 @@ window.sendWhatsapp = function (id) {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 }
 
-window.sendReminderWhatsapp = function (id) {
-    const festa = Store.getFestas().find(f => f.id === id);
+window.sendReminderWhatsapp = async function (id) {
+    const festas = await Store.getFestas();
+    const festa = festas.find(f => f.id === id);
     if (!festa) return;
 
     const texto = REMINDER_TEMPLATE
@@ -650,8 +602,9 @@ window.sendReminderWhatsapp = function (id) {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 }
 
-window.generatePartyReport = function (id) {
-    const festa = Store.getFestas().find(f => f.id === id);
+window.generatePartyReport = async function (id) {
+    const festas = await Store.getFestas();
+    const festa = festas.find(f => f.id === id);
     if (!festa) return;
 
     const report = `✨ *CARD DO RECREADOR - HUBFEST* ✨
@@ -660,7 +613,7 @@ window.generatePartyReport = function (id) {
 👤 *Responsável:* ${festa.responsavel || 'Não informado'}
 📅 *Data:* ${formatDate(festa.data)}
 ⏰ *Hora:* ${festa.hora}
-🎂 *Idade:* ${festa.idade || '-'} anos
+🎂 *Idade:* ${festa.idade || '-'}
 👶 *Qtd. Crianças:* ${festa.criancas || '-'}
 📞 *Telefone:* ${festa.telefone || '-'}
 📍 *Local:* ${festa.local || 'Não informado'}
@@ -671,14 +624,13 @@ _Bom trabalho, equipe!_ 🚀`;
     window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
 }
 
-window.generateTotalReport = function () {
-    const festas = Store.getFestas();
+window.generateTotalReport = async function () {
+    const festas = await Store.getFestas();
     if (festas.length === 0) {
         alert('Nenhuma festa cadastrada para gerar relatório.');
         return;
     }
 
-    // Ordenar por data
     festas.sort((a, b) => new Date(a.data) - new Date(b.data));
 
     let report = `📊 *RELATÓRIO GERAL DE FESTAS* 📊\n`;
@@ -699,8 +651,6 @@ window.generateTotalReport = function () {
     window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
 }
 
-
-// --- THEME SYSTEM ---
 window.setTheme = function (theme) {
     if (theme === 'light') {
         document.body.classList.add('light-mode');
@@ -726,18 +676,15 @@ function updateThemeButtons(theme) {
     }
 }
 
-// --- CONFIG LOGIC ---
 window.savePreferences = function () {
     const template = document.getElementById('config-template').value;
     localStorage.setItem('hubfest_template', template);
 }
 
 window.loadPreferences = function () {
-    // Load Theme
     let theme = localStorage.getItem('hubfest_theme') || 'dark';
     setTheme(theme);
 
-    // Load Template
     let template = localStorage.getItem('hubfest_template');
     if (!template) template = DEFAULT_TEMPLATE;
 
@@ -752,12 +699,11 @@ window.resetTemplate = function () {
     }
 }
 
-function renderTarefas() {
-    const tarefas = Store.getTarefas();
+async function renderTarefas() {
+    const tarefas = await Store.getTarefas();
     const container = document.getElementById('lista-tarefas');
     if (!container) return;
 
-    // Organizar tarefas por status
     const aFazer = tarefas.filter(t => !t.feita && !t.emProgresso);
     const emProgresso = tarefas.filter(t => t.emProgresso && !t.feita);
     const concluidas = tarefas.filter(t => t.feita);
@@ -767,10 +713,8 @@ function renderTarefas() {
         return;
     }
 
-    // Renderizar Kanban Board
     container.innerHTML = `
         <div class="kanban-board">
-            <!-- Coluna: A Fazer -->
             <div class="kanban-column">
                 <div class="kanban-header">
                     <h3>📋 A Fazer</h3>
@@ -781,7 +725,6 @@ function renderTarefas() {
                 </div>
             </div>
             
-            <!-- Coluna: Em Progresso -->
             <div class="kanban-column progress">
                 <div class="kanban-header">
                     <h3>🚀 Em Progresso</h3>
@@ -792,7 +735,6 @@ function renderTarefas() {
                 </div>
             </div>
             
-            <!-- Coluna: Concluídas -->
             <div class="kanban-column done">
                 <div class="kanban-header">
                     <h3>✅ Concluídas</h3>
@@ -805,8 +747,6 @@ function renderTarefas() {
         </div>
     `;
     feather.replace();
-
-    // Ativar drag and drop
     setTimeout(() => setupDropZones(), 100);
 }
 
@@ -814,247 +754,97 @@ function renderTaskCard(t) {
     return `
         <div class="kanban-card ${t.feita ? 'completed' : ''}" 
              draggable="true" 
-             data-task-id="${t.id}"
-             ondragstart="handleDragStart(event)"
-             ondragend="handleDragEnd(event)">
-            <div class="task-content">
-                <h4>${t.titulo}</h4>
+             ondragstart="handleDragStart(event, '${t.id}')">
+            <div class="task-card-content">
+                <div class="task-check" onclick="Store.toggleTarefa('${t.id}', ${t.feita})">
+                    <i data-feather="${t.feita ? 'check-circle' : 'circle'}"></i>
+                </div>
+                <span class="task-title">${t.titulo}</span>
             </div>
             <div class="task-actions">
-                ${!t.feita && !t.emProgresso ? `<button class="task-btn progress" onclick="event.stopPropagation(); moveToProgress('${t.id}')" title="Mover para Em Progresso"><i data-feather="arrow-right" style="width:14px"></i></button>` : ''}
-                ${t.emProgresso && !t.feita ? `<button class="task-btn done" onclick="event.stopPropagation(); markAsDone('${t.id}')" title="Marcar como Concluída"><i data-feather="check" style="width:14px"></i></button>` : ''}
-                ${t.emProgresso ? `<button class="task-btn" onclick="event.stopPropagation(); moveToTodo('${t.id}')" title="Voltar para A Fazer"><i data-feather="arrow-left" style="width:14px"></i></button>` : ''}
-                ${t.feita ? `<button class="task-btn" onclick="event.stopPropagation(); reopenTask('${t.id}')" title="Reabrir"><i data-feather="rotate-ccw" style="width:14px"></i></button>` : ''}
-                <button class="task-btn edit" onclick="event.stopPropagation(); editarTarefa('${t.id}')" title="Editar"><i data-feather="edit-2" style="width:14px"></i></button>
-                <button class="task-btn delete" onclick="event.stopPropagation(); excluirTarefa('${t.id}')" title="Excluir"><i data-feather="trash-2" style="width:14px"></i></button>
+                <button class="task-btn edit" onclick="editarTarefa('${t.id}')">
+                    <i data-feather="edit-2"></i>
+                </button>
+                <button class="task-btn delete" onclick="excluirTarefa('${t.id}')">
+                    <i data-feather="trash-2"></i>
+                </button>
             </div>
         </div>
     `;
 }
 
-// === DRAG AND DROP FUNCTIONALITY ===
-let draggedTaskId = null;
+// --- DASHBOARD HELPERS ---
 
-window.handleDragStart = function (e) {
-    draggedTaskId = e.currentTarget.getAttribute('data-task-id');
-    e.currentTarget.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+async function updateDashboardCounts() {
+    const festas = await Store.getFestas();
+    const tarefas = await Store.getTarefas();
 
-    // Adicionar feedback visual nas zonas de drop
-    setTimeout(() => {
-        document.querySelectorAll('.kanban-tasks').forEach(zone => {
-            zone.classList.add('drag-active');
-        });
-    }, 0);
-}
+    const finalizadasCount = festas.filter(f => f.status === 'dark').length;
+    const ativasCount = tarefas.filter(t => !t.feita).length;
+    const confirmadasCount = festas.filter(f => f.status === 'success').length;
 
-window.handleDragEnd = function (e) {
-    e.currentTarget.classList.remove('dragging');
-    document.querySelectorAll('.kanban-tasks').forEach(zone => {
-        zone.classList.remove('drag-active', 'drag-over');
-    });
-}
+    const elFinalizadas = document.getElementById('count-festas-finalizadas');
+    const elAtivas = document.getElementById('count-tarefas-ativas');
+    const elConfirmadas = document.getElementById('count-festas-confirmadas');
 
-// Configurar zonas de drop após renderizar
-function setupDropZones() {
-    const dropZones = document.querySelectorAll('.kanban-tasks');
-
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            this.classList.add('drag-over');
-        });
-
-        zone.addEventListener('dragleave', function (e) {
-            this.classList.remove('drag-over');
-        });
-
-        zone.addEventListener('drop', function (e) {
-            e.preventDefault();
-            this.classList.remove('drag-over', 'drag-active');
-
-            if (!draggedTaskId) return;
-
-            const column = this.closest('.kanban-column');
-            const tarefa = Store.getTarefas().find(t => t.id === draggedTaskId);
-
-            if (!tarefa) return;
-
-            // Determinar novo status baseado na coluna
-            if (column.classList.contains('progress')) {
-                tarefa.emProgresso = true;
-                tarefa.feita = false;
-            } else if (column.classList.contains('done')) {
-                tarefa.feita = true;
-                tarefa.emProgresso = false;
-            } else {
-                tarefa.emProgresso = false;
-                tarefa.feita = false;
-            }
-
-            Store.updateTarefa(tarefa);
-            draggedTaskId = null;
-        });
-    });
-}
-
-
-// Funções de movimentação Kanban
-window.moveToProgress = function (id) {
-    const tarefa = Store.getTarefas().find(t => t.id === id);
-    if (tarefa) {
-        tarefa.emProgresso = true;
-        Store.updateTarefa(tarefa);
-    }
-}
-
-window.moveToTodo = function (id) {
-    const tarefa = Store.getTarefas().find(t => t.id === id);
-    if (tarefa) {
-        tarefa.emProgresso = false;
-        tarefa.feita = false;
-        Store.updateTarefa(tarefa);
-    }
-}
-
-window.markAsDone = function (id) {
-    const tarefa = Store.getTarefas().find(t => t.id === id);
-    if (tarefa) {
-        tarefa.feita = true;
-        tarefa.emProgresso = false;
-        Store.updateTarefa(tarefa);
-    }
-}
-
-window.reopenTask = function (id) {
-    const tarefa = Store.getTarefas().find(t => t.id === id);
-    if (tarefa) {
-        tarefa.feita = false;
-        tarefa.emProgresso = false;
-        Store.updateTarefa(tarefa);
-    }
-}
-
-
-window.toggleTask = function (id) {
-    Store.toggleTarefa(id);
-}
-
-// --- SETTINGS LOGIC ---
-
-window.resetAppData = function () {
-    if (confirm('Tem certeza? Isso apagará TODAS as festas e tarefas.\nEsta ação não pode ser desfeita.')) {
-        Store.clearAll();
-        alert('Dados limpos com sucesso!');
-        location.reload();
-    }
-}
-
-window.reloadDemoData = function () {
-    if (confirm('Isso apagará os dados atuais e recarregará os exemplos (Julia e Miguel).\nContinuar?')) {
-        Store.clearAll();
-        // data.js init runs on load if empty, so reload triggers it
-        location.reload();
-    }
-}
-
-window.exportAppData = function () {
-    const data = {
-        festas: Store.getFestas(),
-        tarefas: Store.getTarefas(),
-        version: '1.0.0',
-        date: new Date().toISOString()
-    };
-
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "hubfest_backup_" + new Date().toISOString().slice(0, 10) + ".json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-}
-
-window.triggerImport = function () {
-    document.getElementById('import-file').click();
-}
-
-window.importAppData = function (input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            const data = JSON.parse(e.target.result);
-
-            if (confirm(`Restaurar backup de ${data.festas.length} festas e ${data.tarefas.length} tarefas?\nIsso substituirá os dados atuais.`)) {
-                localStorage.setItem('festas', JSON.stringify(data.festas));
-                localStorage.setItem('tarefas', JSON.stringify(data.tarefas));
-                alert('Backup restaurado com sucesso!');
-                location.reload();
-            }
-        } catch (err) {
-            alert('Erro ao ler arquivo de backup. Certifique-se que é um arquivo .json válido do HubFest.');
-            console.error(err);
-        }
-    };
-    reader.readAsText(file);
-}
-
-function updateDashboardCounts() {
-    const festas = Store.getFestas();
-    const tarefas = Store.getTarefas();
-    const finalizadas = festas.filter(f => f.status === 'dark').length;
-    const confirmadas = festas.filter(f => f.status === 'success').length;
-    const tarefasAtivas = tarefas.filter(t => !t.feita).length;
-
-    if (document.getElementById('dash-finalizadas')) document.getElementById('dash-finalizadas').innerText = finalizadas;
-    if (document.getElementById('dash-ativas')) document.getElementById('dash-ativas').innerText = tarefasAtivas;
-    if (document.getElementById('dash-confirmadas')) document.getElementById('dash-confirmadas').innerText = confirmadas;
+    if (elFinalizadas) elFinalizadas.innerText = finalizadasCount;
+    if (elAtivas) elAtivas.innerText = ativasCount;
+    if (elConfirmadas) elConfirmadas.innerText = confirmadasCount;
 }
 
 function formatDate(dateStr) {
     if (!dateStr) return '';
-    const parts = dateStr.split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return dateStr;
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-/**
- * Checks all parties and marks those in the past as "Finalizada" (status: 'dark')
- */
-function checkAndUpdatePastFestas() {
-    const festas = Store.getFestas();
-    const now = new Date();
-    // Use ISO date only for comparison to avoid timezone issues with hours
-    const todayStr = now.toISOString().split('T')[0];
-    const nowTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+async function checkAndUpdatePastFestas() {
+    const festas = await Store.getFestas();
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    let updated = false;
-
-    festas.forEach(f => {
-        // If date is before today OR (date is today AND time is before now)
-        // And status is not already 'dark' (Finalizada)
-        if (f.status !== 'dark') {
-            const isPastDate = f.data < todayStr;
-            const isTodayButPastTime = f.data === todayStr && f.hora < nowTime;
-
-            if (isPastDate || isTodayButPastTime) {
-                f.status = 'dark';
-                f.statusLabel = 'Finalizada';
-                // Silence update (don't trigger events yet to avoid infinite loops)
-                // We use a custom flag to save all at once
-                updated = true;
-            }
+    for (const f of festas) {
+        if (f.data < todayStr && f.status !== 'dark') {
+            await Store.updateFesta({ ...f, status: 'dark', statusLabel: 'Finalizada' });
         }
-    });
-
-    if (updated) {
-        // Update local storage without triggering 'festasUpdated' event to prevent loop
-        localStorage.setItem(Store.KEYS.FESTAS, JSON.stringify(festas));
-        // Note: updateDashboardCounts and other UI elements will be updated by the caller of this function
     }
+}
+
+// --- KANBAN DRAG & DROP ---
+
+let draggedTaskId = null;
+
+window.handleDragStart = function (e, id) {
+    draggedTaskId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function setupDropZones() {
+    const columns = document.querySelectorAll('.kanban-column');
+
+    columns.forEach(col => {
+        col.addEventListener('dragover', (e) => e.preventDefault());
+        col.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            col.classList.add('drag-over');
+        });
+        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+        col.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+
+            if (!draggedTaskId) return;
+
+            const isDone = col.classList.contains('done');
+            const isProgress = col.classList.contains('progress');
+
+            await Store.updateTarefa({
+                id: draggedTaskId,
+                feita: isDone,
+                emProgresso: isProgress && !isDone
+            });
+
+            draggedTaskId = null;
+        });
+    });
 }
