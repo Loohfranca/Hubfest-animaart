@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderData();
     setupFilters();
     loadPreferences(); // Load saved WhatsApp settings
+    checkAndUpdatePastFestas(); // Auto-finalize past parties
     initCalendar(); // New init
 
     document.getElementById('modal-overlay').addEventListener('click', (e) => {
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('festasUpdated', () => {
+        checkAndUpdatePastFestas(); // Re-check whenever data changes
         renderFestas();
         renderCalendar(); // Re-render to show new event dots
         updateDashboardCounts();
@@ -248,35 +250,54 @@ function renderDashboardPreview() {
         return;
     }
 
-    // Sort by Date (Nearest first)
-    festas.sort((a, b) => new Date(a.data) - new Date(b.data));
+    // Sort by Date & Time
+    festas.sort((a, b) => {
+        const dateA = new Date(a.data + 'T' + (a.hora || '00:00') + ':00');
+        const dateB = new Date(b.data + 'T' + (b.hora || '00:00') + ':00');
+        return dateA - dateB;
+    });
 
-    // Filter only future/today parties? Actually, user likely wants next ones. 
-    // For now, take top 3.
-    const nextFestas = festas.slice(0, 3);
-    const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    container.innerHTML = `<div class="preview-list">` + nextFestas.map(f => {
-        const dateObj = new Date(f.data + 'T12:00:00'); // Use T12:00:00 to avoid timezone issues
-        const day = dateObj.getDate();
-        const month = months[dateObj.getMonth()];
+    // Group by Month
+    const grouped = {};
+    festas.forEach(f => {
+        const dateObj = new Date(f.data + 'T12:00:00');
+        const monthKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
+        if (!grouped[monthKey]) grouped[monthKey] = {
+            label: `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`,
+            items: []
+        };
+        grouped[monthKey].items.push(f);
+    });
 
-        return `
-        <div class="preview-item" style="cursor: pointer;" onclick="document.querySelector('.menu-item[data-target=parties]').click()">
-            <div class="date-badge">
-                <span class="date-day">${day}</span>
-                <span class="date-month">${month}</span>
+    let html = '<div class="horizontal-months-container">';
+    for (const key in grouped) {
+        const group = grouped[key];
+        html += `
+            <div class="preview-month-group">
+                <h3 class="month-title">${group.label}</h3>
+                <div class="premium-event-grid">
+                    ${group.items.map(f => {
+            const d = new Date(f.data + 'T12:00:00');
+            return `
+                        <div class="premium-event-card ${f.status || 'pendente'}" onclick="document.querySelector('.menu-item[data-target=parties]').click()">
+                            <div class="event-day">${d.getDate()}</div>
+                            <div class="event-main">
+                                <span class="event-name">${f.nome} ${f.status === 'dark' ? '<i data-feather="check-circle" class="finished-icon"></i>' : ''}</span>
+                                <span class="event-time"><i data-feather="clock"></i> ${f.hora || '--:--'}</span>
+                            </div>
+                            <div class="event-status-indicator"></div>
+                        </div>
+                        `;
+        }).join('')}
+                </div>
             </div>
-            <div class="preview-info">
-                <h4>${f.nome}</h4>
-                <span><i data-feather="clock" style="width:12px;height:12px;"></i> ${f.hora || '--:--'}</span>
-            </div>
-            <div class="preview-status ${f.status || 'pendente'}">
-                ${f.statusLabel || 'Pendente'}
-            </div>
-        </div>
-    `}).join('') + `</div>`;
+        `;
+    }
+    html += '</div>';
 
+    container.innerHTML = html;
     feather.replace();
 }
 
@@ -462,6 +483,14 @@ function renderFestas() {
     const container = document.getElementById('lista-festas');
     if (!container) return;
 
+    // --- SORTING LOGIC ---
+    // Sort chronologically by date and time
+    festas.sort((a, b) => {
+        const dateA = new Date(a.data + 'T' + (a.hora || '00:00'));
+        const dateB = new Date(b.data + 'T' + (b.hora || '00:00'));
+        return dateA - dateB;
+    });
+
     // --- FILTER & SEARCH LOGIC ---
     // 1. Filter by Status
     if (currentFilter !== 'all') {
@@ -526,8 +555,14 @@ function renderFestas() {
             <div class="row-status-actions">
                 <span class="row-badge ${f.status || 'neutral'}">${f.statusLabel || 'Geral'}</span>
                 <div class="row-actions">
-                    <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="WhatsApp">
-                        <i data-feather="message-circle"></i>
+                    <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="Mensagem Hoje">
+                        <i data-feather="send"></i>
+                    </button>
+                    <button class="row-btn reminder" onclick="sendReminderWhatsapp('${f.id}')" title="Lembrete 2 dias">
+                        <i data-feather="bell"></i>
+                    </button>
+                    <button class="row-btn" onclick="generatePartyReport('${f.id}')" title="Gerar Relatório">
+                        <i data-feather="file-text"></i>
                     </button>
                     ${f.local ? `
                     <button class="row-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.local)}', '_blank')" title="Ver Mapa">
@@ -558,6 +593,15 @@ Preparamos tudo com muito carinho para levar diversão, animação e momentos in
 
 Em breve estaremos aí! Qualquer coisa, é só nos chamar 😊🎶`;
 
+const REMINDER_TEMPLATE = `Olá, [responsavel]! ✨
+Passando para confirmar os detalhes da festa da [nome] que será daqui a 2 dias! 🥳
+
+📍 Local: [local]
+📅 Data: [data]
+⏰ Horário: [hora]
+
+Está tudo certo para esse horário? Qualquer dúvida, estamos à disposição! 😊🎈`;
+
 window.sendWhatsapp = function (id) {
     const festa = Store.getFestas().find(f => f.id === id);
     if (!festa) return;
@@ -575,6 +619,69 @@ window.sendWhatsapp = function (id) {
         .replace(/\[idade\]/g, festa.idade || '');
 
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+window.sendReminderWhatsapp = function (id) {
+    const festa = Store.getFestas().find(f => f.id === id);
+    if (!festa) return;
+
+    const texto = REMINDER_TEMPLATE
+        .replace(/\[nome\]/g, festa.nome)
+        .replace(/\[responsavel\]/g, festa.responsavel || 'Cliente')
+        .replace(/\[local\]/g, festa.local || 'Endereço da Festa')
+        .replace(/\[data\]/g, formatDate(festa.data))
+        .replace(/\[hora\]/g, festa.hora);
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+window.generatePartyReport = function (id) {
+    const festa = Store.getFestas().find(f => f.id === id);
+    if (!festa) return;
+
+    const report = `✨ *CARD DO RECREADOR - HUBFEST* ✨
+----------------------------
+🎈 *Festa:* ${festa.nome}
+👤 *Responsável:* ${festa.responsavel || 'Não informado'}
+📅 *Data:* ${formatDate(festa.data)}
+⏰ *Hora:* ${festa.hora}
+🎂 *Idade:* ${festa.idade || '-'} anos
+👶 *Qtd. Crianças:* ${festa.criancas || '-'}
+📞 *Telefone:* ${festa.telefone || '-'}
+📍 *Local:* ${festa.local || 'Não informado'}
+📝 *Obs:* ${festa.obs || 'Nenhuma'}
+----------------------------
+_Bom trabalho, equipe!_ 🚀`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
+}
+
+window.generateTotalReport = function () {
+    const festas = Store.getFestas();
+    if (festas.length === 0) {
+        alert('Nenhuma festa cadastrada para gerar relatório.');
+        return;
+    }
+
+    // Ordenar por data
+    festas.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+    let report = `📊 *RELATÓRIO GERAL DE FESTAS* 📊\n`;
+    report += `Total de festas: ${festas.length}\n`;
+    report += `----------------------------\n\n`;
+
+    festas.forEach((f, index) => {
+        report += `${index + 1}. *${f.nome}*\n`;
+        report += `📅 ${formatDate(f.data)} às ${f.hora}\n`;
+        report += `👶 ${f.criancas || '-'} crianças • 📞 ${f.telefone || '-'}\n`;
+        report += `📍 ${f.local || 'Local não definido'}\n`;
+        report += `👤 ${f.responsavel || 'Sem resp.'}\n`;
+        report += `----------------------------\n`;
+    });
+
+    report += `\n_Gerado por HubFest_`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
 }
 
 
@@ -885,11 +992,11 @@ window.importAppData = function (input) {
 function updateDashboardCounts() {
     const festas = Store.getFestas();
     const tarefas = Store.getTarefas();
-    const pendentes = festas.filter(f => f.status === 'warning' || f.status === 'neutral').length;
+    const finalizadas = festas.filter(f => f.status === 'dark').length;
     const confirmadas = festas.filter(f => f.status === 'success').length;
     const tarefasAtivas = tarefas.filter(t => !t.feita).length;
 
-    if (document.getElementById('dash-pendentes')) document.getElementById('dash-pendentes').innerText = pendentes;
+    if (document.getElementById('dash-finalizadas')) document.getElementById('dash-finalizadas').innerText = finalizadas;
     if (document.getElementById('dash-ativas')) document.getElementById('dash-ativas').innerText = tarefasAtivas;
     if (document.getElementById('dash-confirmadas')) document.getElementById('dash-confirmadas').innerText = confirmadas;
 }
@@ -899,4 +1006,40 @@ function formatDate(dateStr) {
     const parts = dateStr.split('-');
     if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return dateStr;
+}
+
+/**
+ * Checks all parties and marks those in the past as "Finalizada" (status: 'dark')
+ */
+function checkAndUpdatePastFestas() {
+    const festas = Store.getFestas();
+    const now = new Date();
+    // Use ISO date only for comparison to avoid timezone issues with hours
+    const todayStr = now.toISOString().split('T')[0];
+    const nowTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+    let updated = false;
+
+    festas.forEach(f => {
+        // If date is before today OR (date is today AND time is before now)
+        // And status is not already 'dark' (Finalizada)
+        if (f.status !== 'dark') {
+            const isPastDate = f.data < todayStr;
+            const isTodayButPastTime = f.data === todayStr && f.hora < nowTime;
+
+            if (isPastDate || isTodayButPastTime) {
+                f.status = 'dark';
+                f.statusLabel = 'Finalizada';
+                // Silence update (don't trigger events yet to avoid infinite loops)
+                // We use a custom flag to save all at once
+                updated = true;
+            }
+        }
+    });
+
+    if (updated) {
+        // Update local storage without triggering 'festasUpdated' event to prevent loop
+        localStorage.setItem(Store.KEYS.FESTAS, JSON.stringify(festas));
+        // Note: updateDashboardCounts and other UI elements will be updated by the caller of this function
+    }
 }

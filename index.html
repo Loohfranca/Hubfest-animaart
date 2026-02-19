@@ -19,9 +19,7 @@
         <!-- Sidebar Fixa -->
         <aside class="sidebar">
             <div class="logo">
-                <img src="logo.png" alt="HubFest"
-                    onclick="document.querySelector('.menu-item[data-target=dashboard]').click()"
-                    style="cursor: pointer; max-width: 140px; height: auto;">
+                <span class="logo-text" onclick="navTo('dashboard')">HubFest</span>
             </div>
             <nav class="menu">
                 <button class="menu-item active" data-target="dashboard">
@@ -63,8 +61,8 @@
                 <!-- 📊 CARDS DE INDICADORES -->
                 <div class="dashboard-grid">
                     <div class="card indicator-card">
-                        <span class="indicator-number" id="dash-pendentes">0</span>
-                        <span class="indicator-label">Festas Pendentes</span>
+                        <span class="indicator-number" id="dash-finalizadas">0</span>
+                        <span class="indicator-label">Festas Finalizadas</span>
                     </div>
                     <div class="card indicator-card">
                         <span class="indicator-number" id="dash-ativas">1</span>
@@ -76,34 +74,35 @@
                     </div>
                 </div>
 
-                <!-- 🚀 INÍCIO RÁPIDO & 📅 PRÓXIMAS FESTAS (GRID DUAL) -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-
-                    <!-- Coluna 1: Início Rápido -->
-                    <div>
-                        <h3 class="section-title">🚀 Início Rápido</h3>
-                        <div class="quick-actions-grid">
-                            <button class="quick-btn primary" onclick="navTo('parties')">
-                                <i data-feather="plus-circle"></i>
-                                Criar Nova Festa
-                            </button>
-                            <button class="quick-btn" onclick="navTo('calendar')">
-                                <i data-feather="calendar"></i>
-                                Ver Calendário
-                            </button>
-                            <button class="quick-btn" onclick="navTo('tasks')">
-                                <i data-feather="check-square"></i>
-                                Ver Tarefas
-                            </button>
-                        </div>
+                <!-- 🚀 INICIO RÁPIDO -->
+                <div style="margin-bottom: 2.5rem;">
+                    <h3 class="section-title">🚀 Início Rápido</h3>
+                    <div class="quick-actions-grid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
+                        <button class="quick-btn primary" onclick="navTo('parties')">
+                            <i data-feather="plus-circle"></i>
+                            Criar Nova Festa
+                        </button>
+                        <button class="quick-btn" onclick="navTo('calendar')">
+                            <i data-feather="calendar"></i>
+                            Ver Calendário
+                        </button>
+                        <button class="quick-btn" onclick="navTo('tasks')">
+                            <i data-feather="check-square"></i>
+                            Ver Tarefas
+                        </button>
+                        <button class="quick-btn" onclick="generateTotalReport()">
+                            <i data-feather="file-text"></i>
+                            Relatório Geral
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Coluna 2: Próximas Festas -->
-                    <div>
-                        <h3 class="section-title">📅 Próximas Festas</h3>
-                        <div id="dashboard-preview-list">
-                            <!-- Preenchido via JS -->
-                        </div>
+                <!-- 📅 PRÓXIMAS FESTAS (FULL WIDTH) -->
+                <div>
+                    <h3 class="section-title">📅 Próximas Festas</h3>
+                    <div id="dashboard-preview-list">
+                        <!-- Preenchido via JS -->
                     </div>
                 </div>
             </section>
