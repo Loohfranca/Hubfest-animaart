@@ -13,6 +13,13 @@
     <!-- Ícones Feather para um visual limpo e moderno -->
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
+        // KILL SERVICE WORKER: Previne erros de cache (ERR_FAILED)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (let reg of regs) reg.unregister();
+            });
+        }
+
         // AUTH GATE: Verificação de Segurança
         (function () {
             const activeUser = localStorage.getItem('hubfest_active_user');
@@ -20,10 +27,10 @@
 
             if (!activeUser && !isLoginPage) {
                 // Redireciona para login se não estiver logado e não estiver na página de login
-                window.location.href = 'login.html';
+                window.location.href = '/login';
             } else if (activeUser && isLoginPage) {
                 // Redireciona para o dashboard se já estiver logado e tentar acessar login
-                window.location.href = 'index.html';
+                window.location.href = '/';
             }
         })();
     </script>

@@ -116,13 +116,13 @@ function loginUser(user, remember) {
     }
 
     // Sucesso - Ir para Dashboard
-    window.location.href = 'index.html';
+    window.location.href = '/';
 }
 
 function logoutUser() {
     localStorage.removeItem(AUTH_CONFIG.ACTIVE_USER_KEY);
     localStorage.removeItem(AUTH_CONFIG.REMEMBER_KEY);
-    window.location.href = 'login.html';
+    window.location.href = '/login';
 }
 
 function checkAlreadyLoggedIn() {
@@ -132,7 +132,7 @@ function checkAlreadyLoggedIn() {
     // Se estiver na página de login e já tiver login com "Lembrar", vai pro index
     const isLoginPage = window.location.pathname.includes('login');
     if (isLoginPage && activeUser && remember) {
-        window.location.href = 'index.html';
+        window.location.href = '/';
     }
 }
 
