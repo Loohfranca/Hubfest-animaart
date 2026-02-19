@@ -3,10 +3,15 @@
  */
 
 const Store = {
-    // Chaves para o LocalStorage
-    KEYS: {
-        FESTAS: 'hubfest_festas',
-        TAREFAS: 'hubfest_tarefas'
+    // Chaves para o LocalStorage dinâmicas por usuário
+    get KEYS() {
+        const userStr = localStorage.getItem('hubfest_active_user');
+        const userId = userStr ? JSON.parse(userStr).id : 'guest';
+        return {
+            FESTAS: `hubfest_${userId}_festas`,
+            TAREFAS: `hubfest_${userId}_tarefas`,
+            INVESTIMENTOS: `hubfest_${userId}_investimentos`
+        };
     },
 
     // --- FESTAS ---

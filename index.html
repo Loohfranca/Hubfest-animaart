@@ -12,6 +12,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Ícones Feather para um visual limpo e moderno -->
     <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+        // AUTH GATE: Verificação de Segurança
+        (function () {
+            const activeUser = localStorage.getItem('hubfest_active_user');
+            if (!activeUser && !window.location.pathname.includes('login.html')) {
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -47,6 +56,29 @@
                     <span>Configurações</span>
                 </button>
             </nav>
+
+            <div class="sidebar-footer"
+                style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                <div class="user-profile"
+                    style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.5rem;">
+                    <div class="user-avatar"
+                        style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.8rem;"
+                        id="user-initials">
+                        U
+                    </div>
+                    <div class="user-info" style="overflow: hidden;">
+                        <p class="user-name"
+                            style="font-size: 0.85rem; font-weight: 600; color: #fff; white-space: nowrap; text-overflow: ellipsis;"
+                            id="user-display-name">Usuário</p>
+                        <p class="user-status" style="font-size: 0.7rem; color: var(--text-muted);">Online</p>
+                    </div>
+                </div>
+                <button class="menu-item logout-btn" onclick="logoutUser()"
+                    style="color: #f87171; border-radius: 10px; width: 100%;">
+                    <i data-feather="log-out"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
         </aside>
 
         <!-- Área de Conteúdo Principal -->
@@ -54,8 +86,8 @@
             <!-- Seção: Dashboard (REDESENHADA) -->
             <section id="dashboard" class="content-section active">
                 <header class="section-header">
-                    <h1>Dashboard</h1>
-                    <p>Bem-vindo ao HubFest</p>
+                    <h1 class="welcome-greeting" id="main-greeting">Olá, <span>HubFester</span>!</h1>
+                    <p id="welcome-subtitle">O seu HubFest está pronto para os eventos de hoje.</p>
                 </header>
 
                 <!-- 📊 CARDS DE INDICADORES -->
@@ -470,13 +502,37 @@
     <!-- Scripts -->
     <script src="js/data.js"></script>
     <script src="js/investimentos.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/script.js"></script>
     <script>
         // Inicializa os ícones do Feather
         feather.replace();
 
-        // Renderizar investimentos quando navegar para a seção
+        // Carregar dados do usuário logado
         document.addEventListener('DOMContentLoaded', () => {
+            const userStr = localStorage.getItem('hubfest_active_user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('user-display-name').innerText = user.name;
+                document.getElementById('user-initials').innerText = user.name.charAt(0).toUpperCase();
+
+                // Personalizar saudação principal
+                const greetingEl = document.getElementById('main-greeting');
+                if (greetingEl) {
+                    greetingEl.innerHTML = `Olá, <span>${user.name}</span>! ✨`;
+                }
+                const subtitleEl = document.getElementById('welcome-subtitle');
+                if (subtitleEl) {
+                    const saudacoes = [
+                        "Que dia incrível para organizar festas!",
+                        "Tudo pronto para o HubFest de hoje?",
+                        "Seu projeto está ficando fantástico!",
+                        "Pronta para fazer a mágica acontecer?",
+                        "Vamos organizar sonhos hoje?"
+                    ];
+                    subtitleEl.innerText = saudacoes[Math.floor(Math.random() * saudacoes.length)];
+                }
+            }
             const investBtn = document.querySelector('.menu-item[data-target="investimentos"]');
             if (investBtn) {
                 investBtn.addEventListener('click', () => {

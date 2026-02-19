@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HubFest - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body class="auth-page">
+    <div class="auth-overlay"></div>
+
+    <div class="auth-container">
+        <div class="auth-card card">
+            <div class="auth-header">
+                <h1 class="logo-text">HubFest</h1>
+                <p id="auth-description">Acesse sua conta para gerenciar seus eventos</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">E-mail</label>
+                    <div class="input-wrapper">
+                        <i data-feather="mail"></i>
+                        <input type="email" id="login-email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="login-password">Senha</label>
+                        <a href="#" class="forgot-password" onclick="toggleForgotPassword()">Esqueceu a senha?</a>
+                    </div>
+                    <div class="input-wrapper">
+                        <i data-feather="lock"></i>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div class="form-checkbox">
+                    <input type="checkbox" id="remember-me" checked>
+                    <label for="remember-me">Lembrar de mim</label>
+                </div>
+
+                <button type="submit" class="quick-btn primary w-full">Entrar</button>
+
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+
+                <button type="button" class="google-btn" onclick="handleGoogleLogin()">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google">
+                    Entrar com Google
+                </button>
+
+                <p class="switch-form">
+                    Não tem uma conta? <a href="#" onclick="switchForm('signup')">Crie agora</a>
+                </p>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signup-form" class="auth-form">
+                <div class="form-group">
+                    <label for="signup-name">Nome Completo</label>
+                    <div class="input-wrapper">
+                        <i data-feather="user"></i>
+                        <input type="text" id="signup-name" placeholder="Seu nome" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-email">E-mail</label>
+                    <div class="input-wrapper">
+                        <i data-feather="mail"></i>
+                        <input type="email" id="signup-email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password">Senha</label>
+                    <div class="input-wrapper">
+                        <i data-feather="lock"></i>
+                        <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" required
+                            minlength="6">
+                    </div>
+                </div>
+
+                <button type="submit" class="quick-btn primary w-full">Criar Conta</button>
+
+                <p class="switch-form">
+                    Já tem uma conta? <a href="#" onclick="switchForm('login')">Fazer Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>

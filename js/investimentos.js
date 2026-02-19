@@ -1,19 +1,19 @@
 // === INVESTIMENTOS - Sistema de Lista de Compras ===
-const INVESTIMENTOS_KEY = 'hubfest_investimentos';
+const getInvestKey = () => Store.KEYS.INVESTIMENTOS;
 
 // Inicializar investimentos
 function initInvestimentos() {
-    if (!localStorage.getItem(INVESTIMENTOS_KEY)) {
-        localStorage.setItem(INVESTIMENTOS_KEY, JSON.stringify([]));
+    if (!localStorage.getItem(getInvestKey())) {
+        localStorage.setItem(getInvestKey(), JSON.stringify([]));
     }
 }
 
 function getInvestimentos() {
-    return JSON.parse(localStorage.getItem(INVESTIMENTOS_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(getInvestKey()) || '[]');
 }
 
 function saveInvestimentos(investimentos) {
-    localStorage.setItem(INVESTIMENTOS_KEY, JSON.stringify(investimentos));
+    localStorage.setItem(getInvestKey(), JSON.stringify(investimentos));
     renderInvestimentos();
 }
 
