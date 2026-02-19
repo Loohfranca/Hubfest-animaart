@@ -1,41 +1,41 @@
-const CACHE_NAME = 'hubfest-v2'; // Versão atualizada
+const CACHE_NAME = 'hubfest-v3'; // Nova versão
 const ASSETS = [
-    './',
-    './index.html',
-    './login.html',
-    './css/style.css',
-    './css/investimentos.css',
-    './css/auth.css',
-    './js/script.js',
-    './js/data.js',
-    './js/investimentos.js',
-    './js/auth.js',
-    './manifest.json',
-    './icon.png',
-    './logo.png',
-    './bg.png'
+    '/',
+    '/index.html',
+    '/login.html',
+    '/css/style.css',
+    '/css/investimentos.css',
+    '/css/auth.css',
+    '/js/script.js',
+    '/js/data.js',
+    '/js/investimentos.js',
+    '/js/auth.js',
+    '/manifest.json',
+    '/icon.png',
+    '/logo.png',
+    '/bg.png'
 ];
 
-// Install Event: Cache assets
 self.addEventListener('install', (e) => {
     e.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS);
         })
     );
-    self.skipWaiting(); // Força a ativação imediata
+    self.skipWaiting();
 });
 
-// Fetch Event: Serve from cache, then network
 self.addEventListener('fetch', (e) => {
+    // Tenta carregar do cache, se não encontrar vai pra rede
     e.respondWith(
         caches.match(e.request).then((response) => {
             return response || fetch(e.request);
+        }).catch(() => {
+            // Se falhar tudo, tenta retornar o index (opcional)
         })
     );
 });
 
-// Activate Event: Cleanup old caches
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then((keyList) => {
@@ -46,5 +46,5 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
-    return self.clients.claim(); // Assume o controle das abas abertas imediatamente
+    return self.clients.claim();
 });

@@ -130,7 +130,8 @@ function checkAlreadyLoggedIn() {
     const remember = localStorage.getItem(AUTH_CONFIG.REMEMBER_KEY);
 
     // Se estiver na página de login e já tiver login com "Lembrar", vai pro index
-    if (window.location.pathname.includes('login.html') && activeUser && remember) {
+    const isLoginPage = window.location.pathname.includes('login');
+    if (isLoginPage && activeUser && remember) {
         window.location.href = 'index.html';
     }
 }

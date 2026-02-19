@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark light">
     <title>HubFest - Gestão de Eventos</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/investimentos.css">
-    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/investimentos.css">
+    <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Ícones Feather para um visual limpo e moderno -->
     <script src="https://unpkg.com/feather-icons"></script>
@@ -16,8 +16,14 @@
         // AUTH GATE: Verificação de Segurança
         (function () {
             const activeUser = localStorage.getItem('hubfest_active_user');
-            if (!activeUser && !window.location.pathname.includes('login.html')) {
+            const isLoginPage = window.location.pathname.includes('login');
+
+            if (!activeUser && !isLoginPage) {
+                // Redireciona para login se não estiver logado e não estiver na página de login
                 window.location.href = 'login.html';
+            } else if (activeUser && isLoginPage) {
+                // Redireciona para o dashboard se já estiver logado e tentar acessar login
+                window.location.href = 'index.html';
             }
         })();
     </script>
@@ -500,10 +506,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/data.js"></script>
-    <script src="js/investimentos.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/script.js"></script>
+    <script src="/js/data.js"></script>
+    <script src="/js/investimentos.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/script.js"></script>
     <script>
         // Inicializa os ícones do Feather
         feather.replace();
