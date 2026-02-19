@@ -1199,15 +1199,16 @@ body.light-mode .calendar-day.is-holiday {
 
     .sidebar {
         width: 100%;
-        height: auto;
-        position: sticky;
+        height: 60px;
+        position: fixed;
         top: 0;
         z-index: 1000;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        padding: 0.75rem 1rem;
+        padding: 0 1.25rem;
         background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
         border-right: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -1218,15 +1219,26 @@ body.light-mode .calendar-day.is-holiday {
     }
 
     .logo-text {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
     }
 
+    /* MENU NO RODAPÉ (Bottom Nav) */
     .menu {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 65px;
+        background: rgba(15, 23, 42, 0.98);
+        backdrop-filter: blur(25px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
         flex-direction: row;
-        gap: 0.25rem;
-        flex: 1;
-        justify-content: center;
-        margin: 0 0.5rem;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 0.5rem;
+        z-index: 1001;
+        margin: 0;
     }
 
     .menu-item {
@@ -1249,16 +1261,41 @@ body.light-mode .calendar-day.is-holiday {
         border-top: none !important;
         display: flex;
         align-items: center;
+        gap: 0.5rem;
     }
 
     .user-profile {
         margin-bottom: 0 !important;
         padding: 0 !important;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 10px !important;
+        border-radius: 99px;
     }
 
     .user-info {
-        display: none;
-        /* Hide name on small headers to save space */
+        display: block;
+        /* MOSTRAR NOME NO MOBILE */
+    }
+
+    /* STACK VERTICAL PARA PRÓXIMAS FESTAS */
+    .horizontal-months-container {
+        flex-direction: column !important;
+        overflow-x: visible !important;
+        gap: 1.5rem;
+    }
+
+    .preview-month-group {
+        min-width: 100% !important;
+    }
+
+    .user-name {
+        max-width: 80px;
+        font-size: 0.75rem !important;
+    }
+
+    .user-avatar {
+        width: 28px !important;
+        height: 28px !important;
     }
 
     .logout-btn {
@@ -1274,6 +1311,10 @@ body.light-mode .calendar-day.is-holiday {
 
     .main-content {
         padding: 1rem;
+        padding-top: 80px;
+        /* Espaço para a barra de cima */
+        padding-bottom: 100px;
+        /* Espaço para a barra de baixo */
         width: 100%;
         max-width: 100%;
         overflow-x: hidden;
