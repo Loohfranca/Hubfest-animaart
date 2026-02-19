@@ -258,3 +258,49 @@
     border: 1px solid rgba(16, 185, 129, 0.2);
     display: block;
 }
+
+/* RESPONSIVIDADE MOBILE */
+@media (max-width: 480px) {
+    .auth-page {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto !important;
+        padding: 2rem 0;
+        align-items: flex-start;
+        /* Alinha no topo para facilitar scroll */
+    }
+
+    .auth-container {
+        padding: 1rem;
+        max-width: 100%;
+    }
+
+    .auth-card {
+        padding: 1.5rem !important;
+        border-radius: 20px !important;
+    }
+
+    .auth-header .logo-text {
+        font-size: 1.8rem;
+    }
+
+    .input-wrapper input {
+        font-size: 16px !important;
+        /* Evita zoom automático no iOS */
+    }
+
+    .google-btn {
+        font-size: 0.85rem;
+    }
+}
+
+/* Ajuste para telas muito curtas (Landscape) */
+@media (max-height: 600px) {
+    .auth-page {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto !important;
+        padding: 1.5rem 0;
+        align-items: flex-start;
+    }
+}
