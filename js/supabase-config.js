@@ -9,4 +9,8 @@ const SUPABASE_CONFIG = {
 };
 
 // Inicialização do cliente Supabase
-const supabase = supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
+const { createClient } = supabase;
+const _supabase = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.KEY);
+
+// Tornar global para os outros scripts
+window.supabase = _supabase;
