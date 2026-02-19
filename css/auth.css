@@ -289,8 +289,23 @@
         /* Evita zoom automático no iOS */
     }
 
-    .google-btn {
-        font-size: 0.85rem;
+    .welcome-greeting {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Animação do Loader */
+.loader {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
     }
 }
 

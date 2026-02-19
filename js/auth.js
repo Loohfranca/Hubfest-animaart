@@ -86,18 +86,25 @@ function handleSignup(e) {
 }
 
 function handleGoogleLogin() {
-    // Simulação de Google Login
-    // Em produção, aqui usaria o SDK do Firebase ou Supabase
-    const simulatedName = prompt("Simulação Google Login: Digite seu nome completo:");
-    if (simulatedName) {
+    // Simulação de Google Login Profissional para Demonstração
+    const btn = document.querySelector('.google-btn');
+    const originalContent = btn.innerHTML;
+
+    btn.innerHTML = '<i data-feather="loader" class="loader"></i> Aguarde...';
+    btn.disabled = true;
+    feather.replace();
+
+    // Simula o tempo de resposta do Google (1.5 segundos)
+    setTimeout(() => {
         const user = {
-            id: 'google_' + Date.now(),
-            name: simulatedName,
-            email: simulatedName.toLowerCase().replace(' ', '.') + '@gmail.com',
+            id: 'google_demo_123',
+            name: 'Usuário Google Demo',
+            email: 'demo@gmail.com',
             provider: 'google'
         };
+
         loginUser(user, true);
-    }
+    }, 1500);
 }
 
 function loginUser(user, remember) {
