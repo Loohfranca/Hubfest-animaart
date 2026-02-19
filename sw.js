@@ -1,10 +1,15 @@
-const CACHE_NAME = 'hubfest-v1';
+const CACHE_NAME = 'hubfest-v2'; // Versão atualizada
 const ASSETS = [
     './',
     './index.html',
+    './login.html',
     './css/style.css',
+    './css/investimentos.css',
+    './css/auth.css',
     './js/script.js',
     './js/data.js',
+    './js/investimentos.js',
+    './js/auth.js',
     './manifest.json',
     './icon.png',
     './logo.png',
@@ -18,6 +23,7 @@ self.addEventListener('install', (e) => {
             return cache.addAll(ASSETS);
         })
     );
+    self.skipWaiting(); // Força a ativação imediata
 });
 
 // Fetch Event: Serve from cache, then network
@@ -40,4 +46,5 @@ self.addEventListener('activate', (e) => {
             }));
         })
     );
+    return self.clients.claim(); // Assume o controle das abas abertas imediatamente
 });
