@@ -1729,17 +1729,22 @@ input[type="time"] {
 }
 
 .kanban-card {
-    background: var(--glass-bg);
-    border: var(--glass-border);
-    backdrop-filter: var(--glass-blur);
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    background: #1e2128;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.6rem;
     cursor: grab;
+}
+
+body.light-mode .kanban-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .kanban-card:active {
@@ -1752,15 +1757,57 @@ input[type="time"] {
     border-color: var(--primary-color);
 }
 
+.kanban-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
 .kanban-card-title {
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 500;
     color: var(--text-primary);
-    line-height: 1.4;
+    line-height: 1.3;
+}
+
+.kanban-btn-action.done-mark {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.kanban-btn-action.done-mark svg {
+    width: 12px;
+    height: 12px;
+}
+.kanban-btn-action.done-mark:hover {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kanban-meta-group {
+    display: flex;
+    gap: 0.75rem;
 }
 
 .kanban-card-meta {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
@@ -1775,37 +1822,40 @@ input[type="time"] {
 
 .kanban-card-actions {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: var(--glass-border);
+    gap: 4px;
+    opacity: 0.2;
+    transition: opacity 0.2s;
 }
 
-.kanban-btn-action {
+.kanban-card:hover .kanban-card-actions {
+    opacity: 1;
+}
+
+.kanban-btn-action.mini {
+    width: 22px;
+    height: 22px;
+    border: none;
     background: transparent;
-    border: var(--glass-border);
-    border-radius: 6px;
-    width: 32px;
-    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    border-radius: 4px;
     color: var(--text-secondary);
     transition: all 0.2s;
 }
 
-.kanban-btn-action svg {
-    width: 16px;
-    height: 16px;
+.kanban-btn-action.mini svg {
+    width: 14px;
+    height: 14px;
 }
 
-.kanban-btn-action:hover {
+.kanban-btn-action.mini:hover {
     background: var(--primary-color);
     color: #fff;
 }
 
-.kanban-btn-action.delete:hover {
+.kanban-btn-action.mini.delete:hover {
     background: #ef4444;
     color: #fff;
 }

@@ -801,19 +801,27 @@ function renderTarefas() {
              id="task-card-${t.id}" 
              draggable="true" 
              ondragstart="dragTask(event)">
-            <div class="kanban-card-title">${t.titulo}</div>
-            ${t.festaId ? `<div class="kanban-card-meta"><i data-feather="star"></i> Vinculada</div>` : ''}
-            ${t.prazo ? `<div class="kanban-card-meta"><i data-feather="calendar"></i> ${formatDate(t.prazo)}</div>` : ''}
-            <div class="kanban-card-actions">
-                <button class="kanban-btn-action" onclick="editarTarefa('${t.id}')" title="Editar">
-                    <i data-feather="edit-2"></i>
-                </button>
-                <button class="kanban-btn-action" onclick="toggleTask('${t.id}')" title="${t.feita ? 'Reabrir' : 'Concluir'}">
+            
+            <div class="kanban-card-header">
+                <div class="kanban-card-title">${t.titulo}</div>
+                <button class="kanban-btn-action done-mark" onclick="toggleTask('${t.id}')" title="${t.feita ? 'Reabrir' : 'Concluir'}">
                     <i data-feather="${t.feita ? 'rotate-ccw' : 'check'}"></i>
                 </button>
-                <button class="kanban-btn-action delete" onclick="deleteTask('${t.id}')" title="Excluir">
-                    <i data-feather="trash-2"></i>
-                </button>
+            </div>
+            
+            <div class="kanban-card-footer">
+                <div class="kanban-meta-group">
+                    ${t.festaId ? `<div class="kanban-card-meta"><i data-feather="star"></i> Vinculada</div>` : ''}
+                    ${t.prazo ? `<div class="kanban-card-meta"><i data-feather="calendar"></i> ${formatDate(t.prazo)}</div>` : ''}
+                </div>
+                <div class="kanban-card-actions">
+                    <button class="kanban-btn-action mini" onclick="editarTarefa('${t.id}')" title="Editar">
+                        <i data-feather="edit-2"></i>
+                    </button>
+                    <button class="kanban-btn-action delete mini" onclick="deleteTask('${t.id}')" title="Excluir">
+                        <i data-feather="trash-2"></i>
+                    </button>
+                </div>
             </div>
         </div>
     `;
