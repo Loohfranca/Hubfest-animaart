@@ -1827,4 +1827,60 @@ input[type="time"] {
     border: 2px dashed rgba(255,255,255,0.1);
     border-radius: 8px;
 }
-
+
+/* --- MONTHLY INSIGHTS CHART --- */
+.dash-insights-container {
+    margin-top: 1.5rem;
+}
+.insights-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 120px;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+body.light-mode .insights-chart {
+    border-bottom-color: var(--border-color);
+}
+.chart-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    justify-content: flex-end;
+    cursor: default;
+}
+.chart-bar {
+    width: 100%;
+    max-width: 28px;
+    background: #252830;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.4s ease;
+    min-height: 4px;
+}
+body.light-mode .chart-bar { background: #e2e8f0; }
+
+.chart-bar-wrap.highlight .chart-bar {
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow);
+}
+.chart-bar-wrap:hover .chart-bar {
+    background: var(--text-muted);
+}
+.chart-bar-wrap.highlight:hover .chart-bar {
+    background: var(--accent-hover);
+}
+.chart-label {
+    margin-top: 0.5rem;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.chart-bar-wrap.highlight .chart-label {
+    color: var(--text-primary);
+}
+body.light-mode .chart-bar-wrap.highlight .chart-label { color: #0f172a; }

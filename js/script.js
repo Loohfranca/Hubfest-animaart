@@ -359,6 +359,65 @@ function renderDashboardPreview() {
         }
     }
 
+    // --- INSIGHTS ANUAIS ---
+    const chartEl = document.getElementById('dash-insights-chart');
+    if (chartEl) {
+        const now = new Date();
+        const monthlyCounts = [];
+        let maxCount = 0;
+        
+        // Vamos pegar os últimos 7 meses para formar as colunas
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const m = date.getMonth();
+            const y = date.getFullYear();
+            
+            const count = festas.filter(f => {
+                const fd = new Date(f.data + 'T12:00:00');
+                if(isNaN(fd.getTime())) return false; 
+                return fd.getMonth() === m && fd.getFullYear() === y;
+            }).length;
+            
+            if (count > maxCount) maxCount = count;
+            
+            monthlyCounts.push({
+                label: months[m].substring(0,3).toUpperCase(),
+                count: count,
+                isCurrent: i === 0
+            });
+        }
+        
+        if (maxCount === 0) maxCount = 1; // prevent divide by zero
+        
+        chartEl.innerHTML = monthlyCounts.map(m => {
+            const heightPercent = Math.max((m.count / maxCount) * 100, 5); // min 5% height
+            const hlClass = m.isCurrent ? 'highlight' : '';
+            return `
+            <div class="chart-bar-wrap ${hlClass}" title="${m.count} festas em ${m.label}">
+                <div class="chart-bar" style="height: ${heightPercent}%"></div>
+                <span class="chart-label">${m.label}</span>
+            </div>`;
+        }).join('');
+        
+        // Comparativo (Mes atual vs Mes anterior)
+        const curMonth = monthlyCounts[6].count;
+        const prevMonth = monthlyCounts[5].count;
+        const trendEl = document.getElementById('insights-trend');
+        
+        if (trendEl) {
+            if (prevMonth > 0) {
+                const perc = Math.round(((curMonth - prevMonth) / prevMonth) * 100);
+                const signal = perc >= 0 ? '+' : '';
+                trendEl.innerText = `${signal}${perc}% vs ${monthlyCounts[5].label}`;
+                trendEl.style.color = perc >= 0 ? 'var(--accent)' : 'var(--danger)';
+            } else if (curMonth > 0) {
+                trendEl.innerText = `Em Alta!`;
+            } else {
+                trendEl.innerText = `Sem Dados`;
+            }
+        }
+    }
+
     feather.replace();
 }
 
