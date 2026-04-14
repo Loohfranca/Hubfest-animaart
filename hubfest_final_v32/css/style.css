@@ -4,13 +4,11 @@
     /* Deeper space navy */
     --bg-sidebar: linear-gradient(180deg, #0a0f1e 0%, #161e31 100%);
 
-    /* Neon Futuristic Palette */
-    --accent: #22d3ee;
-    /* Neon Cyan */
-    --accent-purple: #a855f7;
-    /* Neon Purple */
-    --accent-hover: #06b6d4;
-    --accent-glow: rgba(34, 211, 238, 0.3);
+    /* Refined Professional Palette */
+    --accent: #3b82f6; /* Blue 500 - Softer, closed blue */
+    --accent-purple: #8b5cf6; /* Violet 500 - Softer purple */
+    --accent-hover: #2563eb; /* Blue 600 */
+    --accent-glow: rgba(59, 130, 246, 0.2);
 
     /* Glassmorphism Properties */
     --glass-bg: rgba(30, 41, 59, 0.7);
