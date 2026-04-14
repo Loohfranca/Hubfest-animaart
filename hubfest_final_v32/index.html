@@ -484,16 +484,8 @@
     <script src="js/data.js"></script>
     
     <script>
-        // ======= PORTÃO DE ACESSO =======
-        // Se a gente não tiver logado o AuthAPI vai bloquear o render e mandar pro login
-        window.addEventListener('load', async () => {
-            const allowed = await window.AuthAPI.checkSession();
-            if(!allowed) {
-                // Redireciona na hora pq não tem credencial
-                document.body.style.display = 'none';
-                window.location.href = 'login.html';
-            }
-        });
+        // ======= PORTÃO DE ACESSO REMOVIDO =======
+        // O redirecionamento para o login foi desativado a pedido do usuário.
     </script>
 
     <script src="js/script.js"></script>
