@@ -17,23 +17,19 @@ const FERIADOS_2026 = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // DESATIVAR E REMOVER SERVICE WORKER PARA LIMPAR CACHE ANTIGO
+    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-            for (let registration of registrations) {
-                registration.unregister();
-                console.log('SW Antigo Removido!');
-            }
-        });
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Service Worker Registrado!'))
+            .catch(err => console.log('SW Falhou:', err));
     }
 
     feather.replace();
     setupNavigation();
     renderData();
     setupFilters();
-    loadPreferences();
-    checkAndUpdatePastFestas();
-    initCalendar();
+    loadPreferences(); // Load saved WhatsApp settings
+    initCalendar(); // New init
 
     document.getElementById('modal-overlay').addEventListener('click', (e) => {
         if (e.target.id === 'modal-overlay') {
@@ -42,9 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('festasUpdated', () => {
-        checkAndUpdatePastFestas();
         renderFestas();
-        renderCalendar();
+        renderCalendar(); // Re-render to show new event dots
         updateDashboardCounts();
         renderDashboardPreview();
     });
@@ -60,17 +55,18 @@ window.navTo = function (targetId) {
 
 // --- MODAL & CRUD LOGIC ---
 
-window.openPartyModal = async function (id = null) {
+// --- FESTAS ---
+window.openPartyModal = function (id = null) {
     const modal = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-festa');
     const title = document.getElementById('modal-festa-title');
     const form = document.getElementById('form-festa');
 
-    form.reset();
+    form.reset(); // Clear previous data
 
     if (id) {
-        const festas = await Store.getFestas();
-        const festa = festas.find(f => f.id === id);
+        // Edit Mode
+        const festa = Store.getFestas().find(f => String(f.id) === String(id));
         if (!festa) return;
 
         title.innerText = 'Editar Festa';
@@ -86,10 +82,13 @@ window.openPartyModal = async function (id = null) {
         document.getElementById('festa-local').value = festa.local || '';
         document.getElementById('festa-obs').value = festa.obs || '';
     } else {
+        // Create Mode
         title.innerText = 'Nova Festa';
         document.getElementById('festa-id').value = '';
+        document.getElementById('form-festa').reset(); // Ensure all new fields are clear
     }
 
+    // Toggle Visibility
     modal.classList.add('active');
     document.getElementById('modal-tarefa').style.display = 'none';
     modalContent.style.display = 'flex';
@@ -99,21 +98,25 @@ window.editarFesta = function (id) {
     openPartyModal(id);
 }
 
-window.excluirFesta = async function (id) {
+window.excluirFesta = function (id) {
     if (confirm('Tem certeza que deseja excluir esta festa?')) {
-        await Store.deleteFesta(id);
+        Store.deleteFesta(id);
     }
 }
 
-document.getElementById('form-festa').addEventListener('submit', async (e) => {
+document.getElementById('form-festa').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('festa-id').value;
+
+    // Status Logic for Label
     const statusVal = document.getElementById('festa-status').value;
     let statusLabel = 'Pendente';
     if (statusVal === 'warning') statusLabel = 'Planejamento';
     if (statusVal === 'success') statusLabel = 'Confirmada';
+    if (statusVal === 'dark') statusLabel = 'Realizada';
 
     const festaData = {
+        id: id || undefined, // undefined lets Store generate ID
         nome: document.getElementById('festa-nome').value,
         responsavel: document.getElementById('festa-responsavel').value,
         data: document.getElementById('festa-data').value,
@@ -128,16 +131,17 @@ document.getElementById('form-festa').addEventListener('submit', async (e) => {
     };
 
     if (id) {
-        festaData.id = id;
-        await Store.updateFesta(festaData);
+        Store.updateFesta(festaData);
     } else {
-        await Store.addFesta(festaData);
+        Store.addFesta(festaData);
     }
 
     closeModals();
 });
 
-window.openTaskModal = async function (id = null) {
+
+// --- TAREFAS ---
+window.openTaskModal = function (id = null) {
     const modal = document.getElementById('modal-overlay');
     const modalContent = document.getElementById('modal-tarefa');
     const title = document.getElementById('modal-tarefa-title');
@@ -146,15 +150,21 @@ window.openTaskModal = async function (id = null) {
     form.reset();
 
     if (id) {
-        const tarefas = await Store.getTarefas();
-        const tarefa = tarefas.find(t => t.id === id);
+        const tarefa = Store.getTarefas().find(t => String(t.id) === String(id));
         if (!tarefa) return;
         title.innerText = 'Editar Tarefa';
         document.getElementById('tarefa-id').value = tarefa.id;
         document.getElementById('tarefa-titulo').value = tarefa.titulo;
+        document.getElementById('tarefa-prazo').value = tarefa.prazo || '';
     } else {
         title.innerText = 'Nova Tarefa';
         document.getElementById('tarefa-id').value = '';
+        
+        // Data formatada para YYYY-MM-DD usando offset local
+        const hoje = new Date();
+        const offset = hoje.getTimezoneOffset() * 60000;
+        const dataLocal = new Date(hoje.getTime() - offset).toISOString().split('T')[0];
+        document.getElementById('tarefa-prazo').value = dataLocal;
     }
 
     modal.classList.add('active');
@@ -166,36 +176,43 @@ window.editarTarefa = function (id) {
     openTaskModal(id);
 }
 
-window.excluirTarefa = async function (id) {
+window.excluirTarefa = function (id) {
     if (confirm('Excluir esta tarefa?')) {
-        await Store.deleteTarefa(id);
+        Store.deleteTarefa(id);
     }
 }
 
-document.getElementById('form-tarefa').addEventListener('submit', async (e) => {
+document.getElementById('form-tarefa').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('tarefa-id').value;
     const tarefaData = {
+        id: id || undefined,
         titulo: document.getElementById('tarefa-titulo').value,
+        prazo: document.getElementById('tarefa-prazo').value || '',
+        // Preserves 'feita' status if updating, or defaults to false in Store if new
     };
 
     if (id) {
-        tarefaData.id = id;
-        await Store.updateTarefa(tarefaData);
+        const existing = Store.getTarefas().find(t => String(t.id) === String(id));
+        if (existing) tarefaData.feita = existing.feita; // Keep checked status
+        Store.updateTarefa(tarefaData);
     } else {
-        await Store.addTarefa(tarefaData);
+        Store.addTarefa(tarefaData);
     }
     closeModals();
 });
 
+
 window.closeModals = function () {
     const modal = document.getElementById('modal-overlay');
     modal.classList.remove('active');
+    // slight delay to clear content display for animation reset
     setTimeout(() => {
         document.getElementById('modal-festa').style.display = 'none';
         document.getElementById('modal-tarefa').style.display = 'none';
     }, 200);
 }
+
 
 // --- DOM HELPERS ---
 
@@ -219,90 +236,139 @@ function showSection(targetId) {
     const targetSection = document.getElementById(targetId);
     if (targetSection) targetSection.classList.add('active');
 
-    const activeBtn = document.querySelectorAll(`.menu-item[data-target="${targetId}"]`);
-    activeBtn.forEach(btn => btn.classList.add('active'));
-
-    const sidebar = document.querySelector('.sidebar');
-    if (window.innerWidth <= 768) {
-        sidebar.classList.remove('mobile-active');
-    }
+    const activeBtn = document.querySelector(`.menu-item[data-target="${targetId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
-window.toggleMobileMenu = function () {
-    const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('mobile-active');
-}
-
-async function renderData() {
-    await renderFestas();
-    await renderTarefas();
+function renderData() {
+    renderFestas();
+    renderTarefas();
     updateDashboardCounts();
     renderDashboardPreview();
 }
 
-async function renderDashboardPreview() {
-    const container = document.getElementById('dashboard-preview-list');
-    if (!container) return;
+function renderDashboardPreview() {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+    let festas = Store.getFestas();
 
-    let festas = await Store.getFestas();
-    if (festas.length === 0) {
-        container.innerHTML = '<div class="card" style="opacity:0.7"><p>Nenhuma festa agendada.</p></div>';
-        return;
+    // Saudação e data
+    const greetEl = document.getElementById('dash-greeting');
+    const dateEl = document.getElementById('dash-date-label');
+    if (greetEl) {
+        const h = new Date().getHours();
+        const emoji = h < 12 ? '☀️' : h < 18 ? '🌤️' : '🌙';
+        greetEl.textContent = emoji;
+    }
+    if (dateEl) {
+        dateEl.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
 
-    festas.sort((a, b) => {
-        const dateA = new Date(a.data + 'T' + (a.hora || '00:00') + ':00');
-        const dateB = new Date(b.data + 'T' + (b.hora || '00:00') + ':00');
-        return dateA - dateB;
-    });
+    // Próximas festas (date >= hoje, excluindo realizadas)
+    const proximas = festas
+        .filter(f => f.data >= hoje)
+        .sort((a, b) => new Date(a.data) - new Date(b.data));
 
-    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    // Realizadas (date < hoje), mais recentes primeiro
+    const realizadas = festas
+        .filter(f => f.data < hoje)
+        .sort((a, b) => new Date(b.data) - new Date(a.data));
 
-    const grouped = {};
-    festas.forEach(f => {
-        const dateObj = new Date(f.data + 'T12:00:00');
-        const monthKey = `${dateObj.getFullYear()}-${dateObj.getMonth()}`;
-        if (!grouped[monthKey]) grouped[monthKey] = {
-            label: `${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`,
-            items: []
-        };
-        grouped[monthKey].items.push(f);
-    });
-
-    let html = '<div class="horizontal-months-container">';
-    for (const key in grouped) {
-        const group = grouped[key];
-        html += `
-            <div class="preview-month-group">
-                <h3 class="month-title">${group.label}</h3>
-                <div class="premium-event-grid">
-                    ${group.items.map(f => {
-            const d = new Date(f.data + 'T12:00:00');
-            return `
-                        <div class="premium-event-card ${f.status || 'pendente'}" onclick="document.querySelector('.menu-item[data-target=parties]').click()">
-                            <div class="event-day">${d.getDate()}</div>
-                            <div class="event-main">
-                                <span class="event-name">${f.nome} ${f.status === 'dark' ? '<i data-feather="check-circle" class="finished-icon"></i>' : ''}</span>
-                                <span class="event-time"><i data-feather="clock"></i> ${f.hora || '--:--'}</span>
-                            </div>
-                            <div class="event-status-indicator"></div>
-                        </div>
-                        `;
-        }).join('')}
+    // --- SPOTLIGHT: próxima festa ---
+    const spotEl = document.getElementById('dash-spotlight');
+    if (spotEl) {
+        if (proximas.length > 0) {
+            const next = proximas[0];
+            const dateObj = new Date(next.data + 'T12:00:00');
+            const diffDays = Math.ceil((dateObj - new Date()) / (1000 * 60 * 60 * 24));
+            const diffLabel = diffDays === 0 ? '🎉 Hoje!' : diffDays === 1 ? 'Amanhã' : `Em ${diffDays} dias`;
+            spotEl.innerHTML = `
+            <div class="dash-spotlight-card" onclick="navTo('parties')">
+                <div class="spotlight-left">
+                    <span class="spotlight-tag">Próxima Festa</span>
+                    <h2 class="spotlight-name">${next.nome}</h2>
+                    <p class="spotlight-info">
+                        <i data-feather="user" style="width:13px;height:13px"></i> ${next.responsavel || '-'}
+                        &nbsp;•&nbsp;
+                        <i data-feather="map-pin" style="width:13px;height:13px"></i> ${next.local || 'Local não definido'}
+                    </p>
                 </div>
-            </div>
-        `;
+                <div class="spotlight-right">
+                    <div class="spotlight-date-block">
+                        <span class="spotlight-day">${dateObj.getDate()}</span>
+                        <span class="spotlight-month">${months[dateObj.getMonth()]}</span>
+                    </div>
+                    <div class="spotlight-meta">
+                        <span class="spotlight-time"><i data-feather="clock" style="width:12px;height:12px"></i> ${next.hora}</span>
+                        <span class="spotlight-diff">${diffLabel}</span>
+                        <span class="spotlight-kids"><i data-feather="users" style="width:12px;height:12px"></i> ${next.criancas || '-'} crianças</span>
+                    </div>
+                </div>
+            </div>`;
+        } else {
+            spotEl.innerHTML = '';
+        }
     }
-    html += '</div>';
 
-    container.innerHTML = html;
+    // --- LISTA DE PRÓXIMAS FESTAS ---
+    const container = document.getElementById('dashboard-preview-list');
+    if (container) {
+        if (proximas.length === 0) {
+            container.innerHTML = `<div class="dash-empty"><i data-feather="calendar"></i><p>Nenhuma festa próxima</p></div>`;
+        } else {
+            container.innerHTML = proximas.map(f => {
+                const dateObj = new Date(f.data + 'T12:00:00');
+                const day = dateObj.getDate();
+                const month = months[dateObj.getMonth()];
+                const statusClass = f.status === 'success' ? 'kpi-green' : f.status === 'warning' ? 'kpi-yellow' : 'kpi-gray-soft';
+                const statusText = f.statusLabel || 'Pendente';
+                return `
+                <div class="dash-festa-row" onclick="navTo('parties')">
+                    <div class="dfr-date">
+                        <span class="dfr-day">${day}</span>
+                        <span class="dfr-month">${month}</span>
+                    </div>
+                    <div class="dfr-info">
+                        <span class="dfr-name">${f.nome}</span>
+                        <span class="dfr-sub">${f.responsavel || ''} • ${f.hora || '--:--'} • ${f.criancas || '-'} crianças</span>
+                    </div>
+                    <span class="dfr-badge ${statusClass}">${statusText}</span>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // --- ÚLTIMAS REALIZADAS ---
+    const realEl = document.getElementById('dash-realizadas-list');
+    if (realEl) {
+        const ultimas = realizadas.slice(0, 4);
+        if (ultimas.length === 0) {
+            realEl.innerHTML = `<p style="color:var(--text-muted);font-size:0.82rem">Nenhuma festa realizada ainda.</p>`;
+        } else {
+            realEl.innerHTML = ultimas.map(f => {
+                const dateObj = new Date(f.data + 'T12:00:00');
+                const day = dateObj.getDate();
+                const month = months[dateObj.getMonth()];
+                return `
+                <div class="dash-real-row">
+                    <span class="dash-real-date">${day} ${month}</span>
+                    <span class="dash-real-name">${f.nome}</span>
+                    <span class="dash-real-resp">${f.responsavel || ''}</span>
+                </div>`;
+            }).join('');
+        }
+    }
+
     feather.replace();
 }
 
-let currentCalDate = new Date();
-let selectedDate = new Date();
+/**
+ * --- CALENDAR LOGIC ---
+ */
+let currentCalDate = new Date(2026, 0, 19); // Start at Jan 2026 as per prompt, or use new Date()
+let selectedDate = new Date(2026, 0, 19);
 
-async function initCalendar() {
+function initCalendar() {
     document.getElementById('prev-month').addEventListener('click', () => {
         currentCalDate.setMonth(currentCalDate.getMonth() - 1);
         renderCalendar();
@@ -312,48 +378,58 @@ async function initCalendar() {
         renderCalendar();
     });
 
-    await renderCalendar();
-    await renderDayDetails(selectedDate);
+    renderCalendar();
+    renderDayDetails(selectedDate);
 }
 
-async function renderCalendar() {
+function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     const title = document.getElementById('calendar-title');
-    const festas = await Store.getFestas();
+    const festas = Store.getFestas();
 
+    // Set Title (Ex: Janeiro 2026)
     const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
     title.innerText = `${monthNames[currentCalDate.getMonth()]} ${currentCalDate.getFullYear()}`;
 
     grid.innerHTML = '';
 
+    // Logic for days
     const firstDayOfMonth = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth(), 1);
     const lastDayOfMonth = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth() + 1, 0);
     const daysInMonth = lastDayOfMonth.getDate();
-    const startingDayOfWeek = firstDayOfMonth.getDay();
+
+    // Padding days (previous month)
+    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
 
     for (let i = 0; i < startingDayOfWeek; i++) {
         const day = document.createElement('div');
         day.classList.add('calendar-day', 'prev-month');
+        // Optional: show number of prev month day? Keeping empty for simplicity or calculate needed.
         grid.appendChild(day);
     }
 
+    // Days of current month
     for (let i = 1; i <= daysInMonth; i++) {
         const day = document.createElement('div');
         day.classList.add('calendar-day');
         day.innerText = i;
 
+        // Construct date string YYYY-MM-DD for comparison
         const monthStr = (currentCalDate.getMonth() + 1).toString().padStart(2, '0');
         const dayStr = i.toString().padStart(2, '0');
         const dateString = `${currentCalDate.getFullYear()}-${monthStr}-${dayStr}`;
 
+        // Check for events
         const hasEvent = festas.some(f => f.data === dateString);
         if (hasEvent) day.classList.add('has-event');
 
+        // Check for holidays
         if (FERIADOS_2026[dateString]) {
             day.classList.add('is-holiday');
             day.title = FERIADOS_2026[dateString];
         }
 
+        // Check selected
         if (selectedDate &&
             selectedDate.getDate() === i &&
             selectedDate.getMonth() === currentCalDate.getMonth() &&
@@ -361,9 +437,10 @@ async function renderCalendar() {
             day.classList.add('selected');
         }
 
+        // Click Handler
         day.addEventListener('click', () => {
             selectedDate = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth(), i);
-            renderCalendar();
+            renderCalendar(); // Re-render to update selected class
             renderDayDetails(selectedDate);
         });
 
@@ -371,17 +448,18 @@ async function renderCalendar() {
     }
 }
 
-async function renderDayDetails(date) {
+function renderDayDetails(date) {
     const container = document.getElementById('day-details-content');
     if (!container) return;
 
-    const festas = await Store.getFestas();
+    const festas = Store.getFestas();
     const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
     const dayStr = date.getDate().toString().padStart(2, '0');
     const dateString = `${date.getFullYear()}-${monthStr}-${dayStr}`;
 
     container.innerHTML = `<h2 id="selected-date-title" style="font-size: 1.35rem; font-weight: 700; color: #fff; margin-bottom: 1.5rem; text-align: center;">${formatDate(dateString)}</h2>`;
 
+    // Check for Holiday
     if (FERIADOS_2026[dateString]) {
         container.innerHTML += `
             <div class="holiday-banner" style="background: rgba(248, 113, 113, 0.15); border: 1px solid rgba(248, 113, 113, 0.3); color: #f87171; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; font-weight: 600; font-size: 0.9rem;">
@@ -419,8 +497,13 @@ async function renderDayDetails(date) {
     feather.replace();
 }
 
+/**
+ * --- EXISTING FUNCTIONS ---
+ */
+
+// --- FILTERS & SEARCH STATE ---
 let currentSearch = '';
-let currentFilter = 'all';
+let currentFilter = 'proximas';
 
 function setupFilters() {
     const searchInput = document.getElementById('party-search');
@@ -435,55 +518,69 @@ function setupFilters() {
 
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
+            // Remove active from all
             filterBtns.forEach(b => b.classList.remove('active'));
+            // Add active to clicked
             btn.classList.add('active');
+
             currentFilter = btn.getAttribute('data-filter');
             renderFestas();
         });
     });
 }
 
+// --- HELPERS ---
 function maskPhone(phone) {
     if (!phone) return '-';
+    // Remove all non-digits
     const clean = phone.replace(/\D/g, '');
     if (clean.length < 2) return phone;
+    // Keep first 2 digits, mask the rest
     return clean.substring(0, 2) + '*'.repeat(clean.length - 2);
 }
 
-async function renderFestas() {
-    let festas = await Store.getFestas();
+function renderFestas() {
+    let festas = Store.getFestas();
     const container = document.getElementById('lista-festas');
     if (!container) return;
 
-    festas.sort((a, b) => {
-        const dateA = new Date(a.data + 'T' + (a.hora || '00:00'));
-        const dateB = new Date(b.data + 'T' + (b.hora || '00:00'));
-        return dateA - dateB;
-    });
+    // Sort by date ascending
+    festas.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-    if (currentFilter !== 'all') {
-        if (currentFilter === 'confirmada') {
-            festas = festas.filter(f => f.status === 'success');
-        } else if (currentFilter === 'pendente') {
-            festas = festas.filter(f => f.status === 'neutral' || f.status === 'warning');
-        } else if (currentFilter === 'finalizada') {
-            festas = festas.filter(f => f.status === 'dark');
-        }
+    // --- FILTER & SEARCH LOGIC ---
+    // 1. Filter by Status
+    if (currentFilter === 'proximas') {
+        // Mostra só festas com data >= hoje (independente do status)
+        const hoje = new Date().toISOString().slice(0, 10);
+        festas = festas.filter(f => f.data >= hoje);
+    } else if (currentFilter === 'confirmada') {
+        festas = festas.filter(f => f.status === 'success');
+    } else if (currentFilter === 'pendente') {
+        festas = festas.filter(f => f.status === 'neutral' || f.status === 'warning');
+    } else if (currentFilter === 'realizada') {
+        festas = festas.filter(f => f.status === 'dark');
     }
+    // 'all' = sem filtro de status
 
+    // 2. Filter by Search (Name or Responsible)
     if (currentSearch) {
         festas = festas.filter(f =>
             f.nome.toLowerCase().includes(currentSearch) ||
             (f.responsavel && f.responsavel.toLowerCase().includes(currentSearch))
         );
     }
+    // ----------------------------
 
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '0.5rem';
 
     if (festas.length === 0) {
-        const msg = (currentSearch || currentFilter !== 'all')
+        const msg = currentFilter === 'proximas'
+            ? 'Nenhuma festa futura agendada. 🎉'
+            : currentFilter === 'realizada'
+            ? 'Nenhuma festa realizada ainda.'
+            : (currentSearch || currentFilter !== 'all')
             ? 'Nenhuma festa encontrada para sua busca.'
             : 'Nenhuma festa cadastrada.';
         container.innerHTML = `<div class="card empty-state-card" style="text-align: center;"><p>${msg}</p></div>`;
@@ -499,7 +596,7 @@ async function renderFestas() {
                 </div>
                 <div class="row-details">
                     <h3 class="row-title">${f.nome}</h3>
-                    <p class="row-subtitle">${f.responsavel || 'Sem responsável'} • ${f.idade || 'Idade -'}</p>
+                    <p class="row-subtitle">${f.responsavel || 'Sem responsável'} • ${f.idade ? f.idade + ' anos' : 'Idade -'}</p>
                 </div>
             </div>
 
@@ -521,14 +618,8 @@ async function renderFestas() {
             <div class="row-status-actions">
                 <span class="row-badge ${f.status || 'neutral'}">${f.statusLabel || 'Geral'}</span>
                 <div class="row-actions">
-                    <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="Mensagem Hoje">
-                        <i data-feather="send"></i>
-                    </button>
-                    <button class="row-btn reminder" onclick="sendReminderWhatsapp('${f.id}')" title="Lembrete 2 dias">
-                        <i data-feather="bell"></i>
-                    </button>
-                    <button class="row-btn" onclick="generatePartyReport('${f.id}')" title="Gerar Relatório">
-                        <i data-feather="file-text"></i>
+                    <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="WhatsApp">
+                        <i data-feather="message-circle"></i>
                     </button>
                     ${f.local ? `
                     <button class="row-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.local)}', '_blank')" title="Ver Mapa">
@@ -559,23 +650,14 @@ Preparamos tudo com muito carinho para levar diversão, animação e momentos in
 
 Em breve estaremos aí! Qualquer coisa, é só nos chamar 😊🎶`;
 
-const REMINDER_TEMPLATE = `Olá, [responsavel]! ✨
-Passando para confirmar os detalhes da festa da [nome] que será daqui a 2 dias! 🥳
-
-📍 Local: [local]
-📅 Data: [data]
-⏰ Horário: [hora]
-
-Está tudo certo para esse horário? Qualquer dúvida, estamos à disposição! 😊🎈`;
-
-window.sendWhatsapp = async function (id) {
-    const festas = await Store.getFestas();
-    const festa = festas.find(f => f.id === id);
+window.sendWhatsapp = function (id) {
+    const festa = Store.getFestas().find(f => String(f.id) === String(id));
     if (!festa) return;
 
     let template = localStorage.getItem('hubfest_template');
     if (!template) template = DEFAULT_TEMPLATE;
 
+    // Replace Placeholders
     const texto = template
         .replace(/\[nome\]/g, festa.nome)
         .replace(/\[responsavel\]/g, festa.responsavel || 'Cliente')
@@ -587,70 +669,8 @@ window.sendWhatsapp = async function (id) {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 }
 
-window.sendReminderWhatsapp = async function (id) {
-    const festas = await Store.getFestas();
-    const festa = festas.find(f => f.id === id);
-    if (!festa) return;
 
-    const texto = REMINDER_TEMPLATE
-        .replace(/\[nome\]/g, festa.nome)
-        .replace(/\[responsavel\]/g, festa.responsavel || 'Cliente')
-        .replace(/\[local\]/g, festa.local || 'Endereço da Festa')
-        .replace(/\[data\]/g, formatDate(festa.data))
-        .replace(/\[hora\]/g, festa.hora);
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-}
-
-window.generatePartyReport = async function (id) {
-    const festas = await Store.getFestas();
-    const festa = festas.find(f => f.id === id);
-    if (!festa) return;
-
-    const report = `✨ *CARD DO RECREADOR - HUBFEST* ✨
-----------------------------
-🎈 *Festa:* ${festa.nome}
-👤 *Responsável:* ${festa.responsavel || 'Não informado'}
-📅 *Data:* ${formatDate(festa.data)}
-⏰ *Hora:* ${festa.hora}
-🎂 *Idade:* ${festa.idade || '-'}
-👶 *Qtd. Crianças:* ${festa.criancas || '-'}
-📞 *Telefone:* ${festa.telefone || '-'}
-📍 *Local:* ${festa.local || 'Não informado'}
-📝 *Obs:* ${festa.obs || 'Nenhuma'}
-----------------------------
-_Bom trabalho, equipe!_ 🚀`;
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
-}
-
-window.generateTotalReport = async function () {
-    const festas = await Store.getFestas();
-    if (festas.length === 0) {
-        alert('Nenhuma festa cadastrada para gerar relatório.');
-        return;
-    }
-
-    festas.sort((a, b) => new Date(a.data) - new Date(b.data));
-
-    let report = `📊 *RELATÓRIO GERAL DE FESTAS* 📊\n`;
-    report += `Total de festas: ${festas.length}\n`;
-    report += `----------------------------\n\n`;
-
-    festas.forEach((f, index) => {
-        report += `${index + 1}. *${f.nome}*\n`;
-        report += `📅 ${formatDate(f.data)} às ${f.hora}\n`;
-        report += `👶 ${f.criancas || '-'} crianças • 📞 ${f.telefone || '-'}\n`;
-        report += `📍 ${f.local || 'Local não definido'}\n`;
-        report += `👤 ${f.responsavel || 'Sem resp.'}\n`;
-        report += `----------------------------\n`;
-    });
-
-    report += `\n_Gerado por HubFest_`;
-
-    window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank');
-}
-
+// --- THEME SYSTEM ---
 window.setTheme = function (theme) {
     if (theme === 'light') {
         document.body.classList.add('light-mode');
@@ -676,15 +696,18 @@ function updateThemeButtons(theme) {
     }
 }
 
+// --- CONFIG LOGIC ---
 window.savePreferences = function () {
     const template = document.getElementById('config-template').value;
     localStorage.setItem('hubfest_template', template);
 }
 
 window.loadPreferences = function () {
+    // Load Theme
     let theme = localStorage.getItem('hubfest_theme') || 'dark';
     setTheme(theme);
 
+    // Load Template
     let template = localStorage.getItem('hubfest_template');
     if (!template) template = DEFAULT_TEMPLATE;
 
@@ -699,152 +722,289 @@ window.resetTemplate = function () {
     }
 }
 
-async function renderTarefas() {
-    const tarefas = await Store.getTarefas();
-    const container = document.getElementById('lista-tarefas');
-    if (!container) return;
-
-    const aFazer = tarefas.filter(t => !t.feita && !t.emProgresso);
-    const emProgresso = tarefas.filter(t => t.emProgresso && !t.feita);
+function renderTarefas() {
+    const tarefas = Store.getTarefas();
+    const pendentes = tarefas.filter(t => !t.feita);
     const concluidas = tarefas.filter(t => t.feita);
 
-    if (tarefas.length === 0) {
-        container.innerHTML = '<div class="card empty-state-card"><p>Nenhuma tarefa pendente.</p></div>';
-        return;
-    }
+    const elPendentes = document.getElementById('lista-tarefas-pendentes');
+    const elConcluidas = document.getElementById('lista-tarefas-feitas');
+    const elCountTodo = document.getElementById('count-todo');
+    const elCountDone = document.getElementById('count-done');
 
-    container.innerHTML = `
-        <div class="kanban-board">
-            <div class="kanban-column">
-                <div class="kanban-header">
-                    <h3>📋 A Fazer</h3>
-                    <span class="task-count">${aFazer.length}</span>
-                </div>
-                <div class="kanban-tasks">
-                    ${aFazer.length > 0 ? aFazer.map(t => renderTaskCard(t)).join('') : '<p class="empty-column">Nenhuma tarefa</p>'}
-                </div>
-            </div>
-            
-            <div class="kanban-column progress">
-                <div class="kanban-header">
-                    <h3>🚀 Em Progresso</h3>
-                    <span class="task-count">${emProgresso.length}</span>
-                </div>
-                <div class="kanban-tasks">
-                    ${emProgresso.length > 0 ? emProgresso.map(t => renderTaskCard(t)).join('') : '<p class="empty-column">Nenhuma tarefa</p>'}
-                </div>
-            </div>
-            
-            <div class="kanban-column done">
-                <div class="kanban-header">
-                    <h3>✅ Concluídas</h3>
-                    <span class="task-count">${concluidas.length}</span>
-                </div>
-                <div class="kanban-tasks">
-                    ${concluidas.length > 0 ? concluidas.map(t => renderTaskCard(t)).join('') : '<p class="empty-column">Nenhuma tarefa</p>'}
-                </div>
-            </div>
-        </div>
-    `;
-    feather.replace();
-    setTimeout(() => setupDropZones(), 100);
-}
+    if (!elPendentes || !elConcluidas) return;
 
-function renderTaskCard(t) {
-    return `
-        <div class="kanban-card ${t.feita ? 'completed' : ''}" 
+    if (elCountTodo) elCountTodo.innerText = pendentes.length;
+    if (elCountDone) elCountDone.innerText = concluidas.length;
+
+    const renderCard = (t) => `
+        <div class="kanban-card ${t.feita ? 'task-done' : ''}" 
+             id="task-card-${t.id}" 
              draggable="true" 
-             ondragstart="handleDragStart(event, '${t.id}')">
-            <div class="task-card-content">
-                <div class="task-check" onclick="Store.toggleTarefa('${t.id}', ${t.feita})">
-                    <i data-feather="${t.feita ? 'check-circle' : 'circle'}"></i>
-                </div>
-                <span class="task-title">${t.titulo}</span>
-            </div>
-            <div class="task-actions">
-                <button class="task-btn edit" onclick="editarTarefa('${t.id}')">
+             ondragstart="dragTask(event)">
+            <div class="kanban-card-title">${t.titulo}</div>
+            ${t.festaId ? `<div class="kanban-card-meta"><i data-feather="star"></i> Vinculada</div>` : ''}
+            ${t.prazo ? `<div class="kanban-card-meta"><i data-feather="calendar"></i> ${formatDate(t.prazo)}</div>` : ''}
+            <div class="kanban-card-actions">
+                <button class="kanban-btn-action" onclick="editarTarefa('${t.id}')" title="Editar">
                     <i data-feather="edit-2"></i>
                 </button>
-                <button class="task-btn delete" onclick="excluirTarefa('${t.id}')">
+                <button class="kanban-btn-action" onclick="toggleTask('${t.id}')" title="${t.feita ? 'Reabrir' : 'Concluir'}">
+                    <i data-feather="${t.feita ? 'rotate-ccw' : 'check'}"></i>
+                </button>
+                <button class="kanban-btn-action delete" onclick="deleteTask('${t.id}')" title="Excluir">
                     <i data-feather="trash-2"></i>
                 </button>
             </div>
         </div>
     `;
-}
 
-// --- DASHBOARD HELPERS ---
+    if (pendentes.length === 0) {
+        elPendentes.innerHTML = `<div class="kanban-empty">Nenhuma tarefa a fazer. ✨</div>`;
+    } else {
+        elPendentes.innerHTML = pendentes.map(t => renderCard(t)).join('');
+    }
 
-async function updateDashboardCounts() {
-    const festas = await Store.getFestas();
-    const tarefas = await Store.getTarefas();
+    if (concluidas.length === 0) {
+        elConcluidas.innerHTML = `<div class="kanban-empty">Nenhuma tarefa finalizada.</div>`;
+    } else {
+        elConcluidas.innerHTML = concluidas.map(t => renderCard(t)).join('');
+    }
 
-    const finalizadasCount = festas.filter(f => f.status === 'dark').length;
-    const ativasCount = tarefas.filter(t => !t.feita).length;
-    const confirmadasCount = festas.filter(f => f.status === 'success').length;
-
-    const elFinalizadas = document.getElementById('count-festas-finalizadas');
-    const elAtivas = document.getElementById('count-tarefas-ativas');
-    const elConfirmadas = document.getElementById('count-festas-confirmadas');
-
-    if (elFinalizadas) elFinalizadas.innerText = finalizadasCount;
-    if (elAtivas) elAtivas.innerText = ativasCount;
-    if (elConfirmadas) elConfirmadas.innerText = confirmadasCount;
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-}
-
-async function checkAndUpdatePastFestas() {
-    const festas = await Store.getFestas();
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    for (const f of festas) {
-        if (f.data < todayStr && f.status !== 'dark') {
-            await Store.updateFesta({ ...f, status: 'dark', statusLabel: 'Finalizada' });
-        }
+    if (typeof feather !== 'undefined') {
+        feather.replace();
     }
 }
 
-// --- KANBAN DRAG & DROP ---
-
-let draggedTaskId = null;
-
-window.handleDragStart = function (e, id) {
-    draggedTaskId = id;
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => e.target.classList.add('dragging'), 0);
+window.toggleTask = function (id) {
+    Store.toggleTarefa(id);
 }
 
-function setupDropZones() {
-    const columns = document.querySelectorAll('.kanban-column');
+// --- DRAG AND DROP KANBAN ---
 
-    columns.forEach(col => {
-        col.addEventListener('dragover', (e) => e.preventDefault());
-        col.addEventListener('dragenter', (e) => {
-            e.preventDefault();
-            col.classList.add('drag-over');
-        });
-        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-        col.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            col.classList.remove('drag-over');
+window.allowDropTask = function (ev) {
+    ev.preventDefault();
+}
 
-            if (!draggedTaskId) return;
+window.dragTask = function (ev) {
+    ev.dataTransfer.setData("taskId", ev.currentTarget.id.replace('task-card-', ''));
+}
 
-            const isDone = col.classList.contains('done');
-            const isProgress = col.classList.contains('progress');
+window.dropTask = function (ev) {
+    ev.preventDefault();
+    const taskId = ev.dataTransfer.getData("taskId");
+    const containerId = ev.currentTarget.id; // lista-tarefas-pendentes ou lista-tarefas-feitas
 
-            await Store.updateTarefa({
-                id: draggedTaskId,
-                feita: isDone,
-                emProgresso: isProgress && !isDone
-            });
+    if (!taskId || !containerId) return;
 
-            draggedTaskId = null;
-        });
-    });
+    const tarefas = Store.getTarefas();
+    const idx = tarefas.findIndex(t => t.id === taskId);
+    if (idx === -1) return;
+
+    // Se soltou na coluna "Concluídas" e a tarefa ainda não está concluída
+    if (containerId.includes('feitas') && !tarefas[idx].feita) {
+        Store.toggleTarefa(taskId);
+    }
+    // Se soltou na coluna "A Fazer" e a tarefa estava concluída
+    else if (containerId.includes('pendentes') && tarefas[idx].feita) {
+        Store.toggleTarefa(taskId);
+    }
+}
+
+// --- SETTINGS LOGIC ---
+
+window.resetAppData = function () {
+    if (confirm('Tem certeza? Isso apagará TODAS as festas e tarefas.\nEsta ação não pode ser desfeita.')) {
+        Store.clearAll();
+        alert('Dados limpos com sucesso!');
+        location.reload();
+    }
+}
+
+// --- DADOS E BACKUP ---
+window.factoryReset = function () {
+    if (confirm('Isso apagará os dados atuais e recarregará os exemplos (Julia e Miguel).\nContinuar?')) {
+        Store.clearAll();
+        // data.js init runs on load if empty, so reload triggers it
+        location.reload();
+    }
+}
+
+window.exportAppData = function () {
+    const data = {
+        festas: Store.getFestas(),
+        tarefas: Store.getTarefas(),
+        version: '1.0.0',
+        date: new Date().toISOString()
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "hubfest_backup_" + new Date().toISOString().slice(0, 10) + ".json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+window.triggerImport = function () {
+    document.getElementById('import-file').click();
+}
+
+window.importAppData = function (input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            if (confirm(`Restaurar backup de ${data.festas.length} festas e ${data.tarefas.length} tarefas?\nIsso substituirá os dados atuais.`)) {
+                localStorage.setItem('festas', JSON.stringify(data.festas));
+                localStorage.setItem('tarefas', JSON.stringify(data.tarefas));
+                alert('Backup restaurado com sucesso!');
+                location.reload();
+            }
+        } catch (err) {
+            alert('Erro ao ler arquivo de backup. Certifique-se que é um arquivo .json válido do HubFest.');
+            console.error(err);
+        }
+    };
+    reader.readAsText(file);
+}
+
+function updateDashboardCounts() {
+    const festas = Store.getFestas();
+    const tarefas = Store.getTarefas();
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const proximasList = festas.filter(f => f.data >= hoje);
+    const realizadasList = festas.filter(f => f.data < hoje);
+    const confirmadas = proximasList.filter(f => f.status === 'success').length;
+    const tarefasAtivas = tarefas.filter(t => !t.feita).length;
+
+    if (document.getElementById('dash-proximas')) document.getElementById('dash-proximas').innerText = proximasList.length;
+    if (document.getElementById('dash-total')) document.getElementById('dash-total').innerText = festas.length;
+    if (document.getElementById('dash-ativas')) document.getElementById('dash-ativas').innerText = tarefasAtivas;
+    if (document.getElementById('dash-confirmadas')) document.getElementById('dash-confirmadas').innerText = confirmadas;
+    if (document.getElementById('dash-realizadas')) document.getElementById('dash-realizadas').innerText = realizadasList.length;
+}
+
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+}
+
+// ========== RELATÓRIOS ==========
+function gerarRelatorio(tipo) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const festas = Store.getFestas();
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    let lista, titulo, subtitulo;
+    if (tipo === 'proximas') {
+        lista = festas.filter(f => f.data >= hoje).sort((a,b) => new Date(a.data) - new Date(b.data));
+        titulo = 'Relatório de Próximas Festas';
+        subtitulo = `Festas a partir de ${new Date().toLocaleDateString('pt-BR')}`;
+    } else {
+        lista = festas.sort((a,b) => new Date(a.data) - new Date(b.data));
+        titulo = 'Relatório Geral de Festas';
+        subtitulo = `Todas as festas cadastradas na plataforma`;
+    }
+
+    const proximasCount = festas.filter(f => f.data >= hoje).length;
+    const realizadasCount = festas.filter(f => f.data < hoje).length;
+    const confirmadasCount = festas.filter(f => f.data >= hoje && f.status === 'success').length;
+
+    const rows = lista.map((f, i) => {
+        const d = new Date(f.data + 'T12:00:00');
+        const isPast = f.data < hoje;
+        const statusText = isPast ? 'Realizada' : (f.status === 'success' ? 'Confirmada' : 'Pendente');
+        const statusColor = isPast ? '#94a3b8' : (f.status === 'success' ? '#10b981' : '#f59e0b');
+        const phone = f.telefone ? f.telefone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3') : '-';
+        return `
+        <tr style="${isPast ? 'opacity:0.7' : ''}">
+            <td style="text-align:center;font-weight:700;color:#64748b">${i+1}</td>
+            <td><strong>${f.nome}</strong></td>
+            <td>${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}</td>
+            <td>${f.hora || '-'}</td>
+            <td>${f.responsavel || '-'}</td>
+            <td>${phone}</td>
+            <td>${f.criancas || '-'}</td>
+            <td>${f.local || '-'}</td>
+            <td><span style="background:${statusColor}15;color:${statusColor};padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">${statusText}</span></td>
+        </tr>`;
+    }).join('');
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>${titulo} - HubFest</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Inter', system-ui, sans-serif; background: #fff; color: #1e293b; padding: 30px 40px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #0ea5e9; padding-bottom: 16px; }
+            .header h1 { font-size: 20px; color: #0f172a; }
+            .header p { font-size: 12px; color: #64748b; margin-top: 4px; }
+            .header .date { font-size: 11px; color: #94a3b8; text-align: right; }
+            .kpis { display: flex; gap: 12px; margin-bottom: 20px; }
+            .kpi { flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+            .kpi .num { font-size: 24px; font-weight: 800; color: #0f172a; }
+            .kpi .lbl { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background: #f1f5f9; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; padding: 8px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+            td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; }
+            tr:hover { background: #f8fafc; }
+            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+            @media print {
+                body { padding: 15px 20px; }
+                .no-print { display: none !important; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="margin-bottom:16px;text-align:right">
+            <button onclick="window.print()" style="background:#0ea5e9;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">🖨️ Imprimir / Salvar PDF</button>
+        </div>
+        <div class="header">
+            <div>
+                <h1>🎉 ${titulo}</h1>
+                <p>${subtitulo}</p>
+            </div>
+            <div class="date">
+                <div>Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</div>
+                <div style="margin-top:4px;font-weight:600;color:#0f172a">${lista.length} festas listadas</div>
+            </div>
+        </div>
+        <div class="kpis">
+            <div class="kpi"><div class="num">${festas.length}</div><div class="lbl">Total</div></div>
+            <div class="kpi"><div class="num" style="color:#0ea5e9">${proximasCount}</div><div class="lbl">Próximas</div></div>
+            <div class="kpi"><div class="num" style="color:#10b981">${confirmadasCount}</div><div class="lbl">Confirmadas</div></div>
+            <div class="kpi"><div class="num" style="color:#94a3b8">${realizadasCount}</div><div class="lbl">Realizadas</div></div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Aniversariante</th><th>Data</th><th>Hora</th>
+                    <th>Responsável</th><th>Telefone</th><th>Crianças</th><th>Local</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">
+            <span>HubFest - Gestão de Eventos</span>
+            <span>Página 1</span>
+        </div>
+    </body>
+    </html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
 }

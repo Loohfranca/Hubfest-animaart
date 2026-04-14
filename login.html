@@ -1,119 +1,302 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HubFest - Login</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/auth.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>HubFest - Acesso</title>
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/feather-icons"></script>
-
-    <!-- Supabase Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/supabase-config.js"></script>
-    <script>
-        // KILL SERVICE WORKER: Previne erros de cache (ERR_FAILED)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(regs => {
-                for (let reg of regs) reg.unregister();
-            });
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-main);
+            margin: 0;
+            font-family: var(--font-main);
+            overflow: hidden;
         }
-    </script>
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 50vw;
+            height: 50vh;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
+            border-radius: 50%;
+            z-index: 0;
+            animation: pulseBg 10s ease-in-out infinite alternate;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            backdrop-filter: var(--glass-blur);
+            padding: 3rem 2rem;
+            border-radius: var(--radius-md);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .login-logo i {
+            color: var(--accent);
+        }
+
+        .login-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .login-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .toggle-form {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .toggle-form:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            min-height: 20px;
+        }
+
+        .success-msg {
+            color: var(--success);
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            min-height: 20px;
+        }
+
+        @keyframes pulseBg {
+            0% { transform: scale(1) translate(0,0); }
+            100% { transform: scale(1.1) translate(10%, -10%); }
+        }
+    </style>
 </head>
 
-<body class="auth-page">
-    <div class="auth-overlay"></div>
+<body>
+    <div class="login-container">
+        <div class="login-logo">
+            <i data-feather="box"></i> HubFest
+        </div>
+        <p class="login-subtitle" id="form-subtitle">Painel de Eventos - Acesso Restrito</p>
 
-    <div class="auth-container">
-        <div class="auth-card card">
-            <div class="auth-header">
-                <h1 class="logo-text">HubFest</h1>
-                <p id="auth-description">Acesse sua conta para gerenciar seus eventos</p>
+        <form id="auth-form">
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="email" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; justify-content: space-between;">
+                    Senha
+                    <span id="forgot-pw-btn" style="color:var(--accent); cursor:pointer; font-weight:normal; font-size: 0.8rem;">Esqueci a senha</span>
+                </label>
+                <input type="password" id="password" placeholder="••••••••" required>
             </div>
 
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form active">
-                <div class="form-group">
-                    <label for="login-email">E-mail</label>
-                    <div class="input-wrapper">
-                        <i data-feather="mail"></i>
-                        <input type="email" id="login-email" placeholder="seu@email.com" required>
-                    </div>
-                </div>
+            <button type="submit" class="login-btn" id="submit-btn">
+                <span id="btn-text">Entrar</span>
+                <i data-feather="arrow-right" id="btn-icon"></i>
+            </button>
+            <div class="error-msg" id="error-msg"></div>
+            <div class="success-msg" id="success-msg"></div>
+        </form>
 
-                <div class="form-group">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <label for="login-password">Senha</label>
-                        <a href="#" class="forgot-password" onclick="toggleForgotPassword()">Esqueceu a senha?</a>
-                    </div>
-                    <div class="input-wrapper">
-                        <i data-feather="lock"></i>
-                        <input type="password" id="login-password" placeholder="••••••••" required>
-                    </div>
-                </div>
-
-                <div class="form-checkbox">
-                    <input type="checkbox" id="remember-me" checked>
-                    <label for="remember-me">Lembrar de mim</label>
-                </div>
-
-                <button type="submit" class="quick-btn primary w-full">Entrar</button>
-
-                <div class="divider">
-                    <span>ou</span>
-                </div>
-
-                <button type="button" class="google-btn" onclick="handleGoogleLogin()">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google">
-                    Entrar com Google
-                </button>
-
-                <p class="switch-form">
-                    Não tem uma conta? <a href="#" onclick="switchForm('signup')">Crie agora</a>
-                </p>
-            </form>
-
-            <!-- Signup Form -->
-            <form id="signup-form" class="auth-form">
-                <div class="form-group">
-                    <label for="signup-name">Nome Completo</label>
-                    <div class="input-wrapper">
-                        <i data-feather="user"></i>
-                        <input type="text" id="signup-name" placeholder="Seu nome" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="signup-email">E-mail</label>
-                    <div class="input-wrapper">
-                        <i data-feather="mail"></i>
-                        <input type="email" id="signup-email" placeholder="seu@email.com" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="signup-password">Senha</label>
-                    <div class="input-wrapper">
-                        <i data-feather="lock"></i>
-                        <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" required
-                            minlength="6">
-                    </div>
-                </div>
-
-                <button type="submit" class="quick-btn primary w-full">Criar Conta</button>
-
-                <p class="switch-form">
-                    Já tem uma conta? <a href="#" onclick="switchForm('login')">Fazer Login</a>
-                </p>
-            </form>
+        <div class="toggle-form" id="toggle-form-btn">
+            Novo na equipe? <span style="color:var(--accent); font-weight:600;">Cadastre-se rapidinho</span>
         </div>
     </div>
 
-    <script src="/js/auth.js"></script>
+    <!-- SDK do Supabase V2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/data.js"></script>
+
     <script>
         feather.replace();
+
+        // O data.js já tem a const SUPABASE_URL e SUPABASE_ANON_KEY.
+        const authClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let isLoginMode = true;
+        const form = document.getElementById('auth-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const errorMsg = document.getElementById('error-msg');
+        const successMsg = document.getElementById('success-msg');
+        const toggleBtn = document.getElementById('toggle-form-btn');
+        const forgotPwBtn = document.getElementById('forgot-pw-btn');
+
+        // Check Se já está logado
+        window.addEventListener('load', async () => {
+            const { data: { session } } = await authClient.auth.getSession();
+            if (session) {
+                window.location.href = 'index.html'; // já tá logado
+            }
+        });
+
+        // Alternar modo Entrada vs Cadastro
+        toggleBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            errorMsg.innerText = '';
+            successMsg.innerText = '';
+            forgotPwBtn.style.display = isLoginMode ? 'inline' : 'none';
+            
+            if (isLoginMode) {
+                btnText.innerText = 'Entrar';
+                toggleBtn.innerHTML = 'Novo na equipe? <span style="color:var(--accent); font-weight:600;">Cadastre-se rapidinho</span>';
+            } else {
+                btnText.innerText = 'Criar Conta';
+                toggleBtn.innerHTML = 'Já faz parte da equipe? <span style="color:var(--accent); font-weight:600;">Faça o login</span>';
+            }
+        });
+
+        // Recuperar senha
+        forgotPwBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            if(!email) {
+                errorMsg.innerText = "Digite seu e-mail na caixinha acima primeiro!";
+                return;
+            }
+            errorMsg.innerText = '';
+            successMsg.innerText = 'Enviando e-mail com instruções...';
+            
+            const { data, error } = await authClient.auth.resetPasswordForEmail(email);
+            if(error) {
+                errorMsg.innerText = "Verifique o e-mail. " + error.message;
+                successMsg.innerText = "";
+            } else {
+                successMsg.innerText = "Pronto! Acesse seu e-mail para trocar sua senha.";
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.innerText = '';
+            successMsg.innerText = '';
+            submitBtn.disabled = true;
+            btnText.innerText = 'Processando...';
+
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            try {
+                if (isLoginMode) {
+                    const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    
+                    window.location.href = 'index.html';
+                } else {
+                    const { data, error } = await authClient.auth.signUp({ email, password });
+                    if (error) throw error;
+                    
+                    if (!data.session) {
+                        // Supabase exige confirmação de email!
+                        successMsg.innerText = 'Conta criada! 🎉 Vá na sua caixa de entrada (Gmail/etc) agora e clique no link de Confirmação enviado pelo Supabase. Depois volte aqui para entrar.';
+                        submitBtn.disabled = false;
+                        btnText.innerText = 'Tentar Entrar Novamente';
+                    } else {
+                        successMsg.innerText = "Conta criada com sucesso! Redirecionando...";
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    }
+                }
+            } catch (err) {
+                errorMsg.innerText = err.message.includes('credential') ? 'E-mail ou senha incorretos' : err.message;
+                submitBtn.disabled = false;
+                btnText.innerText = isLoginMode ? 'Entrar' : 'Criar Conta';
+            }
+        });
     </script>
 </body>
 
