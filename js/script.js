@@ -587,55 +587,55 @@ function renderFestas() {
         return;
     }
 
-    container.innerHTML = festas.map(f => `
+    container.innerHTML = festas.map(f => {
+        const dateObj = new Date(f.data + 'T12:00:00');
+        return `
         <div class="party-row">
-            <div class="row-main-info">
-                <div class="row-date">
-                    <span class="day">${new Date(f.data + 'T12:00:00').getDate()}</span>
-                    <span class="month">${new Date(f.data + 'T12:00:00').toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}</span>
-                </div>
-                <div class="row-details">
-                    <h3 class="row-title">${f.nome}</h3>
-                    <p class="row-subtitle">${f.responsavel || 'Sem responsável'} • ${f.idade ? f.idade + ' anos' : 'Idade -'}</p>
-                </div>
+            <div class="row-date-box">
+                <span class="day">${dateObj.getDate().toString().padStart(2, '0')}</span>
+                <span class="month">${dateObj.toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+            </div>
+            
+            <div class="row-info-col title-col">
+                <h3 class="row-title">${f.nome}</h3>
+                <p class="row-subtitle">${f.responsavel || 'Sem responsável'} &mdash; ${f.idade ? f.idade.replace(' anos', '') + ' anos' : 'Evento'}</p>
             </div>
 
-            <div class="row-stats">
+            <div class="row-info-col time-col">
                 <div class="stat-item">
                     <i data-feather="clock"></i>
-                    <span>${f.hora}</span>
+                    <span>${f.hora || '--:--'}</span>
                 </div>
                 <div class="stat-item phone-desktop">
                     <i data-feather="phone"></i>
                     <span>${maskPhone(f.telefone)}</span>
                 </div>
-                <div class="stat-item">
-                    <i data-feather="users"></i>
-                    <span>${f.criancas || '-'} crian.</span>
-                </div>
             </div>
 
-            <div class="row-status-actions">
-                <span class="row-badge ${f.status || 'neutral'}">${f.statusLabel || 'Geral'}</span>
-                <div class="row-actions">
-                    <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="WhatsApp">
-                        <i data-feather="message-circle"></i>
-                    </button>
-                    ${f.local ? `
-                    <button class="row-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.local)}', '_blank')" title="Ver Mapa">
-                        <i data-feather="map-pin"></i>
-                    </button>
-                    ` : ''}
-                    <button class="row-btn primary" onclick="editarFesta('${f.id}')" title="Editar">
-                        <i data-feather="edit-2"></i>
-                    </button>
-                    <button class="row-btn delete" onclick="excluirFesta('${f.id}')" title="Excluir">
-                        <i data-feather="trash-2"></i>
-                    </button>
+            <div class="row-info-col guests-col">
+                <div class="stat-item">
+                    <i data-feather="users"></i>
+                    <span>${f.criancas || '-'} conv.</span>
                 </div>
+                <span class="row-badge ${f.status || 'neutral'}">${(f.statusLabel || 'PENDENTE').toUpperCase()}</span>
+            </div>
+
+            <div class="row-actions">
+                <button class="row-btn whatsapp" onclick="sendWhatsapp('${f.id}')" title="WhatsApp">
+                    <i data-feather="message-square"></i>
+                </button>
+                <button class="row-btn map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.local || '')}', '_blank')" title="Ver Mapa" ${!f.local ? 'style="opacity:0.3;pointer-events:none;"' : ''}>
+                    <i data-feather="map"></i>
+                </button>
+                <button class="row-btn edit" onclick="editarFesta('${f.id}')" title="Editar">
+                    <i data-feather="edit-2"></i>
+                </button>
+                <button class="row-btn delete" onclick="excluirFesta('${f.id}')" title="Excluir">
+                    <i data-feather="trash-2"></i>
+                </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
     feather.replace();
 }
 
