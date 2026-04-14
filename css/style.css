@@ -128,7 +128,7 @@ body.light-mode .search-box input::placeholder {
     color: #94a3b8;
 }
 
-body.light-mode .search-box i {
+body.light-mode .search-box svg {
     color: #64748b;
 }
 
@@ -1354,9 +1354,10 @@ input[type="time"] {
 .filter-toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
     align-items: center;
     margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 
 .search-box {
@@ -1366,7 +1367,7 @@ input[type="time"] {
     min-width: 250px;
 }
 
-.search-box i {
+.search-box svg {
     position: absolute;
     left: 1rem;
     top: 50%;
@@ -1374,22 +1375,25 @@ input[type="time"] {
     color: var(--text-muted);
     width: 18px;
     height: 18px;
+    pointer-events: none;
 }
 
 .search-box input {
     width: 100%;
-    padding-left: 3rem;
-    /* Space for icon */
-    background: var(--card-bg);
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    background: var(--glass-bg);
     border: 1px solid var(--border-color);
     border-radius: 99px;
-    /* Pill shape */
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s;
 }
 
 .search-box input:focus {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--accent-purple);
     box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+    outline: none;
 }
 
 .filter-group {
@@ -1397,7 +1401,6 @@ input[type="time"] {
     gap: 0.5rem;
     overflow-x: auto;
     padding-bottom: 2px;
-    /* Scrollbar space if needed */
 }
 
 .filter-chip {
