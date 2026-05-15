@@ -272,17 +272,19 @@ const Store = {
         
         // Buscar Festas
         const rowsFestas = await SupabaseAPI.get('festas', 'order=data.asc');
-        if (rowsFestas && Array.isArray(rowsFestas)) {
+        if (rowsFestas && Array.isArray(rowsFestas) && rowsFestas.length > 0) {
             const festas = rowsFestas.map(r => this._supabaseRowToFesta(r));
             localStorage.setItem(this.KEYS.FESTAS, JSON.stringify(festas));
             this._supabaseReady = true;
             console.log(`[HubFest] ✅ ${festas.length} festas sincronizadas!`);
             document.dispatchEvent(new Event('festasUpdated'));
+        } else {
+            console.log('[HubFest] Supabase sem festas ou indisponível — mantendo cache local');
         }
 
         // Buscar Tarefas
         const rowsTarefas = await SupabaseAPI.get('tarefas', '');
-        if (rowsTarefas && Array.isArray(rowsTarefas)) {
+        if (rowsTarefas && Array.isArray(rowsTarefas) && rowsTarefas.length > 0) {
             const tarefas = rowsTarefas.map(r => this._supabaseRowToTarefa(r));
             localStorage.setItem(this.KEYS.TAREFAS, JSON.stringify(tarefas));
             console.log(`[HubFest] ✅ ${tarefas.length} tarefas sincronizadas!`);
