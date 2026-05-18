@@ -16,6 +16,29 @@ export async function signIn(formData: FormData) {
   redirect("/dashboard");
 }
 
+export async function signUp(formData: FormData) {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const name = String(formData.get("name") ?? "");
+
+  if (!email || !password) return { error: "Email e senha obrigatórios" };
+  if (password.length < 6) return { error: "Senha mínima 6 caracteres" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
+
+  if (error) return { error: error.message };
+  if (data.session) {
+    revalidatePath("/", "layout");
+    redirect("/dashboard");
+  }
+  return { ok: true, needsConfirmation: true };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
