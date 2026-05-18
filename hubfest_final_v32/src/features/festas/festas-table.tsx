@@ -4,9 +4,24 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Festa, Tarefa } from "@/shared/supabase/types";
-import { Pencil, MapPin, Trash2, Phone, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { formatDateBR } from "@/lib/date";
+import { Pencil, MapPin, Trash2, Phone, ArrowUpDown, ArrowUp, ArrowDown, CalendarPlus } from "lucide-react";
+import { formatDateBR, googleCalendarUrl } from "@/lib/date";
 import { mapsUrl } from "./festa-card";
+
+function gcalUrlForFesta(f: Festa): string {
+  return googleCalendarUrl({
+    title: `Festa de ${f.nome}`,
+    date: f.data,
+    time: f.hora,
+    location: f.local,
+    details: [
+      f.responsavel && `Responsável: ${f.responsavel}`,
+      f.telefone && `Tel: ${f.telefone}`,
+      f.criancas && `${f.criancas} crianças`,
+      f.obs,
+    ].filter(Boolean).join("\n"),
+  });
+}
 import { whatsappUrl } from "@/lib/whatsapp";
 import { deleteFesta } from "./actions";
 import { StatusBadge } from "./status-badge";
@@ -144,6 +159,17 @@ export function FestasTable({
                       >
                         <Pencil className="w-4 h-4" />
                       </Link>
+                      {f.data && (
+                        <a
+                          href={gcalUrlForFesta(f)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-md hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)]"
+                          title="Adicionar ao Google Calendar"
+                        >
+                          <CalendarPlus className="w-4 h-4" />
+                        </a>
+                      )}
                       {f.local && (
                         <a
                           href={mapsUrl(f.local)}
@@ -201,6 +227,11 @@ export function FestasTable({
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <QuickTask festaId={f.id} count={ts.filter((t) => !t.feita).length} />
                     <div className="flex items-center gap-1">
+                      {f.data && (
+                        <a href={gcalUrlForFesta(f)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-1.5 rounded hover:bg-[var(--color-muted)]" aria-label="Adicionar ao Google Calendar">
+                          <CalendarPlus className="w-4 h-4" />
+                        </a>
+                      )}
                       <Link href={`/festas/${f.id}/editar`} className="p-1.5 rounded hover:bg-[var(--color-muted)]" aria-label="Editar">
                         <Pencil className="w-4 h-4" />
                       </Link>

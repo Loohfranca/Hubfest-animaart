@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { getFesta } from "@/features/festas/queries";
 import { listTarefas } from "@/features/festas/queries";
 import { statusColor } from "@/features/festas/status";
-import { formatDateLong } from "@/lib/date";
+import { formatDateLong, googleCalendarUrl } from "@/lib/date";
 import { deleteFesta } from "@/features/festas/actions";
-import { Pencil, Trash2, Phone, MapPin, Users, Clock, Calendar, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, Phone, MapPin, Users, Clock, Calendar, ExternalLink, CalendarPlus } from "lucide-react";
 import { TarefasList } from "@/features/tarefas/tarefas-list";
 import { mapsUrl } from "@/features/festas/festa-card";
 import { BriefingButton } from "@/features/festas/briefing-button";
@@ -30,6 +30,27 @@ export default async function FestaDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="flex gap-2 flex-wrap">
           <BriefingButton festa={festa} />
+          {festa.data && (
+            <a
+              href={googleCalendarUrl({
+                title: `Festa de ${festa.nome}`,
+                date: festa.data,
+                time: festa.hora,
+                location: festa.local,
+                details: [
+                  festa.responsavel && `Responsável: ${festa.responsavel}`,
+                  festa.telefone && `Tel: ${festa.telefone}`,
+                  festa.criancas && `${festa.criancas} crianças`,
+                  festa.obs,
+                ].filter(Boolean).join("\n"),
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium hover:bg-[var(--color-muted)]"
+            >
+              <CalendarPlus className="w-4 h-4" /> Google Calendar
+            </a>
+          )}
           <Link
             href={`/festas/${festa.id}/editar`}
             className="inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium hover:bg-[var(--color-muted)]"

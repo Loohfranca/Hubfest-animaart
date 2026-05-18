@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Pencil, MapPin } from "lucide-react";
+import { Pencil, MapPin, CalendarPlus } from "lucide-react";
 import type { Festa } from "@/shared/supabase/types";
 import { statusColor, statusBarColor } from "./status";
-import { shortMonth } from "@/lib/date";
+import { shortMonth, googleCalendarUrl } from "@/lib/date";
 
 export function mapsUrl(local: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(local)}`;
@@ -25,6 +25,29 @@ export function FestaCard({ f }: { f: Festa }) {
         {f.statusLabel}
       </span>
       <div className="flex items-center gap-1">
+        {f.data && (
+          <a
+            href={googleCalendarUrl({
+              title: `Festa de ${f.nome}`,
+              date: f.data,
+              time: f.hora,
+              location: f.local,
+              details: [
+                f.responsavel && `Responsável: ${f.responsavel}`,
+                f.telefone && `Tel: ${f.telefone}`,
+                f.criancas && `${f.criancas} crianças`,
+                f.obs,
+              ].filter(Boolean).join("\n"),
+            })}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Adicionar ao Google Calendar"
+            className="p-2 rounded-lg hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] transition"
+            aria-label="Adicionar ao Google Calendar"
+          >
+            <CalendarPlus className="w-4 h-4" />
+          </a>
+        )}
         {f.local && (
           <a
             href={mapsUrl(f.local)}
