@@ -1,9 +1,10 @@
 "use server";
 
 import { createClient } from "@/shared/supabase/server";
-import { festaToRow, type FestaStatus, type FestaStatusLabel } from "@/shared/supabase/types";
+import { festaToRow, rowToFesta, type FestaStatus, type FestaStatusLabel } from "@/shared/supabase/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { syncFestaToCalendar, deleteCalendarEvent } from "./google-calendar";
 
 function labelFor(status: FestaStatus): FestaStatusLabel {
   if (status === "success") return "Confirmada";
@@ -31,9 +32,19 @@ function parseForm(fd: FormData) {
 export async function createFesta(fd: FormData) {
   const supabase = await createClient();
   const id = Date.now().toString();
-  const row = festaToRow({ id, ...parseForm(fd) });
-  const { error } = await supabase.from("festas").insert(row);
+  const parsed = parseForm(fd);
+  const row = festaToRow({ id, ...parsed });
+  const { data, error } = await supabase.from("festas").insert(row).select().single();
   if (error) return { error: error.message };
+
+  if (data) {
+    const festa = rowToFesta(data);
+    const eventId = await syncFestaToCalendar(festa, null);
+    if (eventId) {
+      await supabase.from("festas").update({ google_event_id: eventId }).eq("id", id);
+    }
+  }
+
   revalidatePath("/festas");
   revalidatePath("/dashboard");
   redirect("/festas");
@@ -41,9 +52,20 @@ export async function createFesta(fd: FormData) {
 
 export async function updateFesta(id: string, fd: FormData) {
   const supabase = await createClient();
-  const row = festaToRow({ id, ...parseForm(fd) });
+  const parsed = parseForm(fd);
+  const row = festaToRow({ id, ...parsed });
   const { error } = await supabase.from("festas").update(row).eq("id", id);
   if (error) return { error: error.message };
+
+  const { data: current } = await supabase.from("festas").select("*").eq("id", id).single();
+  if (current) {
+    const festa = rowToFesta(current);
+    const eventId = await syncFestaToCalendar(festa, current.google_event_id);
+    if (eventId && eventId !== current.google_event_id) {
+      await supabase.from("festas").update({ google_event_id: eventId }).eq("id", id);
+    }
+  }
+
   revalidatePath("/festas");
   revalidatePath(`/festas/${id}`);
   revalidatePath("/dashboard");
@@ -62,6 +84,10 @@ export async function updateStatus(id: string, status: FestaStatus) {
 
 export async function deleteFesta(id: string) {
   const supabase = await createClient();
+  const { data: current } = await supabase.from("festas").select("google_event_id").eq("id", id).single();
+  if (current?.google_event_id) {
+    await deleteCalendarEvent(current.google_event_id);
+  }
   await supabase.from("festas").delete().eq("id", id);
   revalidatePath("/festas");
   revalidatePath("/dashboard");

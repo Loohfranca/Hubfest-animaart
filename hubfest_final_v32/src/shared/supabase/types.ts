@@ -13,6 +13,7 @@ export interface FestaRow {
   obs: string;
   status: FestaStatus;
   status_label: FestaStatusLabel;
+  google_event_id?: string | null;
   created_at?: string;
 }
 
