@@ -21,7 +21,7 @@ export function FestaForm({ festa }: { festa?: Festa }) {
   return (
     <form action={onSubmit} className="space-y-5 max-w-2xl">
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Nome da festa *" name="nome" defaultValue={festa?.nome} required />
+        <Field label="Nome da criança *" name="nome" defaultValue={festa?.nome} required />
         <Field label="Responsável" name="responsavel" defaultValue={festa?.responsavel} />
         <Field label="Data *" name="data" type="date" defaultValue={festa?.data} required />
         <Field label="Hora" name="hora" type="time" defaultValue={festa?.hora} />
