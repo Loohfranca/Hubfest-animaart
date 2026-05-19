@@ -4,7 +4,7 @@ import { createClient } from "@/shared/supabase/server";
 import { festaToRow, rowToFesta, type FestaStatus, type FestaStatusLabel } from "@/shared/supabase/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { syncFestaToCalendar, deleteCalendarEvent } from "./google-calendar";
+import { syncFestaToCalendar } from "./google-calendar";
 
 function labelFor(status: FestaStatus): FestaStatusLabel {
   if (status === "success") return "Confirmada";
@@ -85,10 +85,6 @@ export async function updateStatus(id: string, status: FestaStatus) {
 
 export async function deleteFesta(id: string) {
   const supabase = await createClient();
-  const { data: current } = await supabase.from("festas").select("google_event_id").eq("id", id).single();
-  if (current?.google_event_id) {
-    await deleteCalendarEvent(current.google_event_id);
-  }
   await supabase.from("festas").delete().eq("id", id);
   revalidatePath("/festas");
   revalidatePath("/dashboard");
