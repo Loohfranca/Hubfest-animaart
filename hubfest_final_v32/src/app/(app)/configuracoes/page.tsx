@@ -1,10 +1,22 @@
 import { createClient } from "@/shared/supabase/server";
 import { signOut } from "@/features/auth/actions";
-import { LogOut, Mail, User } from "lucide-react";
+import { LogOut, Mail, User, Calendar } from "lucide-react";
+import { isGoogleConnected, listUserCalendars } from "@/features/festas/google-calendar";
+import { GoogleCalendarSettings } from "@/features/festas/google-calendar-settings";
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  const connected = await isGoogleConnected();
+  const calendars = connected ? await listUserCalendars() : [];
+  const { data: prefs } = connected
+    ? await supabase
+        .from("user_google_tokens")
+        .select("calendar_id, reminder_minutes")
+        .eq("user_id", user!.id)
+        .single()
+    : { data: null };
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -20,6 +32,18 @@ export default async function ConfiguracoesPage() {
           <User className="w-4 h-4 text-[var(--color-muted-foreground)]" />
           <span className="text-sm font-mono text-[var(--color-muted-foreground)]">{user?.id?.slice(0, 12)}...</span>
         </div>
+      </section>
+
+      <section className="rounded-2xl border bg-[var(--color-card)] shadow-[var(--shadow-card)] p-5">
+        <h2 className="font-semibold mb-3 flex items-center gap-2">
+          <Calendar className="w-4 h-4" /> Google Calendar
+        </h2>
+        <GoogleCalendarSettings
+          connected={connected}
+          calendars={calendars}
+          currentCalendarId={prefs?.calendar_id ?? "primary"}
+          currentReminders={prefs?.reminder_minutes ?? [1440, 60]}
+        />
       </section>
 
       <section className="rounded-2xl border bg-[var(--color-card)] shadow-[var(--shadow-card)] p-5">

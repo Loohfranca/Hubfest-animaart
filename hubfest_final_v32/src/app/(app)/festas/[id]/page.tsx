@@ -5,7 +5,7 @@ import { listTarefas } from "@/features/festas/queries";
 import { statusColor } from "@/features/festas/status";
 import { formatDateLong, googleCalendarUrl } from "@/lib/date";
 import { deleteFesta } from "@/features/festas/actions";
-import { Pencil, Trash2, Phone, MapPin, Users, Clock, Calendar, ExternalLink, CalendarPlus } from "lucide-react";
+import { Pencil, Trash2, Phone, MapPin, Users, Clock, Calendar, ExternalLink, CalendarPlus, CalendarCheck } from "lucide-react";
 import { TarefasList } from "@/features/tarefas/tarefas-list";
 import { mapsUrl } from "@/features/festas/festa-card";
 import { BriefingButton } from "@/features/festas/briefing-button";
@@ -22,9 +22,16 @@ export default async function FestaDetailPage({ params }: { params: Promise<{ id
     <div className="max-w-4xl mx-auto space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${statusColor(festa.status)}`}>
-            {festa.statusLabel}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${statusColor(festa.status)}`}>
+              {festa.statusLabel}
+            </span>
+            {festa.googleEventId && (
+              <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full bg-[var(--color-success)]/10 text-[var(--color-success)] inline-flex items-center gap-1">
+                <CalendarCheck className="w-3 h-3" /> Sincronizado
+              </span>
+            )}
+          </div>
           <h1 className="text-3xl font-bold mt-2">{festa.nome}</h1>
           <p className="text-sm text-[var(--color-muted-foreground)] capitalize">{formatDateLong(festa.data)}</p>
         </div>

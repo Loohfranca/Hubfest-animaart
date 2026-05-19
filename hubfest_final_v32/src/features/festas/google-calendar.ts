@@ -10,9 +10,20 @@ interface GoogleEvent {
   location?: string;
   start: { dateTime?: string; date?: string; timeZone?: string };
   end: { dateTime?: string; date?: string; timeZone?: string };
+  reminders?: {
+    useDefault: boolean;
+    overrides?: { method: "popup" | "email"; minutes: number }[];
+  };
 }
 
-function buildEvent(festa: Partial<Festa>): GoogleEvent | null {
+export interface GoogleCalendar {
+  id: string;
+  summary: string;
+  primary?: boolean;
+  backgroundColor?: string;
+}
+
+function buildEvent(festa: Partial<Festa>, reminderMinutes: number[]): GoogleEvent | null {
   if (!festa.data) return null;
 
   const description = [
@@ -40,6 +51,13 @@ function buildEvent(festa: Partial<Festa>): GoogleEvent | null {
     const endIso = `${endDate}T${endH}:${endM}:00`;
     event.start = { dateTime: startIso, timeZone: TZ };
     event.end = { dateTime: endIso, timeZone: TZ };
+  }
+
+  if (reminderMinutes.length > 0) {
+    event.reminders = {
+      useDefault: false,
+      overrides: reminderMinutes.map((minutes) => ({ method: "popup", minutes })),
+    };
   }
 
   return event;
@@ -100,6 +118,19 @@ async function getAccessToken(userId: string): Promise<string | null> {
   return data.access_token;
 }
 
+async function getUserPrefs(userId: string): Promise<{ calendarId: string; reminderMinutes: number[] }> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("user_google_tokens")
+    .select("calendar_id, reminder_minutes")
+    .eq("user_id", userId)
+    .single();
+  return {
+    calendarId: data?.calendar_id || "primary",
+    reminderMinutes: data?.reminder_minutes ?? [1440, 60],
+  };
+}
+
 export async function syncFestaToCalendar(
   festa: Festa,
   existingEventId?: string | null,
@@ -108,13 +139,15 @@ export async function syncFestaToCalendar(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const event = buildEvent(festa);
+  const prefs = await getUserPrefs(user.id);
+  const event = buildEvent(festa, prefs.reminderMinutes);
   if (!event) return null;
 
   const token = await getAccessToken(user.id);
   if (!token) return null;
 
-  const base = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+  const calendarId = encodeURIComponent(prefs.calendarId);
+  const base = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`;
   const url = existingEventId ? `${base}/${existingEventId}` : base;
   const method = existingEventId ? "PATCH" : "POST";
 
@@ -145,11 +178,43 @@ export async function deleteCalendarEvent(eventId: string): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
+  const prefs = await getUserPrefs(user.id);
   const token = await getAccessToken(user.id);
   if (!token) return;
 
+  const calendarId = encodeURIComponent(prefs.calendarId);
   await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`,
     { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
   );
+}
+
+export async function listUserCalendars(): Promise<GoogleCalendar[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const token = await getAccessToken(user.id);
+  if (!token) return [];
+
+  const res = await fetch(
+    "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer",
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as { items: GoogleCalendar[] };
+  return data.items ?? [];
+}
+
+export async function isGoogleConnected(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase
+    .from("user_google_tokens")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .single();
+  return !!data;
 }

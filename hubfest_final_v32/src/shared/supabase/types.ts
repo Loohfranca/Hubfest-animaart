@@ -45,6 +45,7 @@ export interface Festa {
   obs: string;
   status: FestaStatus;
   statusLabel: FestaStatusLabel;
+  googleEventId?: string | null;
 }
 
 export interface Tarefa {
@@ -72,6 +73,7 @@ export function rowToFesta(r: FestaRow): Festa {
     obs: r.obs ?? "",
     status: r.status ?? "neutral",
     statusLabel: r.status_label ?? "Pendente",
+    googleEventId: r.google_event_id ?? null,
   };
 }
 
