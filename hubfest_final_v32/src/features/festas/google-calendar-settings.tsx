@@ -73,7 +73,7 @@ export function GoogleCalendarSettings({
   }
 
   return (
-    <form action={onSave} className="space-y-4">
+    <form key={`${currentCalendarId}-${currentReminders.join(",")}`} action={onSave} className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-[var(--color-success)]">
         <Check className="w-4 h-4" /> Conectado ao Google Calendar
       </div>
