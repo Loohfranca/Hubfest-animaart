@@ -22,6 +22,7 @@ function parseForm(fd: FormData) {
     hora: String(fd.get("hora") ?? ""),
     telefone: String(fd.get("telefone") ?? ""),
     criancas: String(fd.get("criancas") ?? ""),
+    idade: String(fd.get("idade") ?? ""),
     local: String(fd.get("local") ?? ""),
     obs: String(fd.get("obs") ?? ""),
     status,

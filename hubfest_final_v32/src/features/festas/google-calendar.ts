@@ -29,6 +29,7 @@ function buildEvent(festa: Partial<Festa>, reminderMinutes: number[]): GoogleEve
   const description = [
     festa.responsavel && `Responsável: ${festa.responsavel}`,
     festa.telefone && `Telefone: ${festa.telefone}`,
+    festa.idade && `Idade: ${festa.idade}`,
     festa.criancas && `${festa.criancas} crianças`,
     festa.obs,
   ].filter(Boolean).join("\n");

@@ -17,6 +17,7 @@ function gcalUrlForFesta(f: Festa): string {
     details: [
       f.responsavel && `Responsável: ${f.responsavel}`,
       f.telefone && `Tel: ${f.telefone}`,
+      f.idade && `Idade: ${f.idade}`,
       f.criancas && `${f.criancas} crianças`,
       f.obs,
     ].filter(Boolean).join("\n"),

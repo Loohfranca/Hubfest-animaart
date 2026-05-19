@@ -47,6 +47,7 @@ export default async function FestaDetailPage({ params }: { params: Promise<{ id
                 details: [
                   festa.responsavel && `Responsável: ${festa.responsavel}`,
                   festa.telefone && `Tel: ${festa.telefone}`,
+                  festa.idade && `Idade: ${festa.idade}`,
                   festa.criancas && `${festa.criancas} crianças`,
                   festa.obs,
                 ].filter(Boolean).join("\n"),
@@ -77,6 +78,7 @@ export default async function FestaDetailPage({ params }: { params: Promise<{ id
         <Info icon={<Phone className="w-4 h-4" />} label="Telefone" value={festa.telefone} />
         <Info icon={<Clock className="w-4 h-4" />} label="Hora" value={festa.hora} />
         <Info icon={<Users className="w-4 h-4" />} label="Crianças" value={festa.criancas} />
+        <Info icon={<Users className="w-4 h-4" />} label="Idade" value={festa.idade} />
         <div className="sm:col-span-2 rounded-xl border bg-[var(--color-card)] shadow-[var(--shadow-card)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] inline-flex items-center gap-1.5">
             <MapPin className="w-4 h-4" />Local

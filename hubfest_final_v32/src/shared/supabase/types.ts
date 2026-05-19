@@ -9,6 +9,7 @@ export interface FestaRow {
   hora: string;
   telefone: string;
   criancas: string;
+  idade: string;
   local: string;
   obs: string;
   status: FestaStatus;
@@ -41,6 +42,7 @@ export interface Festa {
   hora: string;
   telefone: string;
   criancas: string;
+  idade: string;
   local: string;
   obs: string;
   status: FestaStatus;
@@ -69,6 +71,7 @@ export function rowToFesta(r: FestaRow): Festa {
     hora: r.hora ?? "",
     telefone: r.telefone ?? "",
     criancas: r.criancas ?? "",
+    idade: r.idade ?? "",
     local: r.local ?? "",
     obs: r.obs ?? "",
     status: r.status ?? "neutral",
@@ -86,6 +89,7 @@ export function festaToRow(f: Partial<Festa> & { id: string }): Partial<FestaRow
     hora: f.hora ?? "",
     telefone: f.telefone ?? "",
     criancas: f.criancas ?? "",
+    idade: f.idade ?? "",
     local: f.local ?? "",
     obs: f.obs ?? "",
     status: f.status ?? "neutral",

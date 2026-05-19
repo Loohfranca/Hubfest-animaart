@@ -27,6 +27,7 @@ export function FestaForm({ festa }: { festa?: Festa }) {
         <Field label="Hora" name="hora" type="time" defaultValue={festa?.hora} />
         <Field label="Telefone" name="telefone" defaultValue={festa?.telefone} />
         <Field label="Crianças" name="criancas" defaultValue={festa?.criancas} />
+        <Field label="Idade da criança" name="idade" defaultValue={festa?.idade} placeholder="ex: 5 anos" />
         <Field label="Local" name="local" defaultValue={festa?.local} className="sm:col-span-2" />
         <div className="sm:col-span-2">
           <label className="text-sm font-medium block mb-1.5">Status</label>
@@ -75,9 +76,9 @@ export function FestaForm({ festa }: { festa?: Festa }) {
 }
 
 function Field({
-  label, name, type = "text", defaultValue, required, className,
+  label, name, type = "text", defaultValue, required, className, placeholder,
 }: {
-  label: string; name: string; type?: string; defaultValue?: string; required?: boolean; className?: string;
+  label: string; name: string; type?: string; defaultValue?: string; required?: boolean; className?: string; placeholder?: string;
 }) {
   return (
     <div className={className}>
@@ -87,6 +88,7 @@ function Field({
         type={type}
         required={required}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         className="w-full rounded-lg border bg-[var(--color-input)] px-3 py-2.5 outline-none focus:ring-2 focus:ring-[var(--color-ring)]"
       />
     </div>
